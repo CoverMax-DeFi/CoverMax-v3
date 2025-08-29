@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useEffect, useRef, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useRef, ReactNode, useMemo } from 'react';
 import { PrivyProvider, usePrivy, useWallets } from '@privy-io/react-auth';
 import { ethers, BrowserProvider, Contract, Signer } from 'ethers';
 import { toast } from '@/components/ui/sonner';
@@ -557,7 +557,7 @@ const InnerWeb3Provider: React.FC<{ children: ReactNode }> = ({ children }) => {
   }, [provider, signer, address, currentChain, getCurrentChainAddress]);
 
   // Approve token spending
-  const approveToken = async (tokenAddress: string, amount: string) => {
+  const approveToken = useCallback(async (tokenAddress: string, amount: string) => {
     if (!signer) {
       toast.error('Please connect your wallet');
       return;
@@ -580,7 +580,7 @@ const InnerWeb3Provider: React.FC<{ children: ReactNode }> = ({ children }) => {
       toast.error('Failed to approve token');
       throw error;
     }
-  };
+  }, [signer, getCurrentChainAddress]);
 
   // Deposit assets
   const depositAsset = async (asset: 'aUSDC' | 'cUSDT', amount: string) => {

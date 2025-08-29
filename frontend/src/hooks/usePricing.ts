@@ -93,7 +93,7 @@ export const usePricing = () => {
     }, 30000);
     
     return () => clearInterval(interval);
-  }, [seniorTokenAddress, juniorTokenAddress, getAmountsOut, getPairReserves, currentChain, poolReserves.senior, poolReserves.junior]);
+  }, [seniorTokenAddress, juniorTokenAddress, getAmountsOut, getPairReserves, currentChain]);
 
   return {
     seniorPrice,

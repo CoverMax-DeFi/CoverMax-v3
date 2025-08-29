@@ -1,5 +1,6 @@
 import { useWeb3 } from '@/context/PrivyWeb3Context';
 import { ethers } from 'ethers';
+import { useMemo } from 'react';
 
 export const usePortfolioCalculations = (seniorPrice: string, juniorPrice: string) => {
   const { balances, vaultInfo } = useWeb3();
@@ -7,12 +8,14 @@ export const usePortfolioCalculations = (seniorPrice: string, juniorPrice: strin
   const formatTokenAmount = (amount: bigint) => ethers.formatEther(amount);
   const formatNumber = (num: number, decimals = 2) => num.toFixed(decimals);
 
-  // Calculated values
-  const seniorBalance = Number(formatTokenAmount(balances.seniorTokens));
-  const juniorBalance = Number(formatTokenAmount(balances.juniorTokens));
-  const aUSDCBalance = Number(formatTokenAmount(balances.aUSDC));
-  const cUSDTBalance = Number(formatTokenAmount(balances.cUSDT));
-  const lpBalance = Number(formatTokenAmount(balances.lpTokens));
+  // Memoized calculated values
+  const { seniorBalance, juniorBalance, aUSDCBalance, cUSDTBalance, lpBalance } = useMemo(() => ({
+    seniorBalance: Number(formatTokenAmount(balances.seniorTokens)),
+    juniorBalance: Number(formatTokenAmount(balances.juniorTokens)),
+    aUSDCBalance: Number(formatTokenAmount(balances.aUSDC)),
+    cUSDTBalance: Number(formatTokenAmount(balances.cUSDT)),
+    lpBalance: Number(formatTokenAmount(balances.lpTokens)),
+  }), [balances.seniorTokens, balances.juniorTokens, balances.aUSDC, balances.cUSDT, balances.lpTokens]);
   
   // Calculate LP token USD value using pool reserves
   const calculateLPValueUSD = (poolReserves: { senior: string; junior: string }) => {
@@ -34,17 +37,16 @@ export const usePortfolioCalculations = (seniorPrice: string, juniorPrice: strin
     return (lpBalance / estimatedTotalLPSupply) * totalPoolValueUSD;
   };
 
-  const totalPortfolioValue =
-    (seniorBalance * parseFloat(seniorPrice)) +
-    (juniorBalance * parseFloat(juniorPrice));
+  const { totalPortfolioValue, protocolTVL, userSharePercent } = useMemo(() => ({
+    totalPortfolioValue: (seniorBalance * parseFloat(seniorPrice)) + (juniorBalance * parseFloat(juniorPrice)),
+    protocolTVL: (Number(vaultInfo.aUSDCBalance) + Number(vaultInfo.cUSDTBalance)) / 1e18,
+    userSharePercent: vaultInfo.totalTokensIssued > 0n
+      ? ((seniorBalance + juniorBalance) / (Number(vaultInfo.totalTokensIssued) / 1e18) * 100)
+      : 0,
+  }), [seniorBalance, juniorBalance, seniorPrice, juniorPrice, vaultInfo.aUSDCBalance, vaultInfo.cUSDTBalance, vaultInfo.totalTokensIssued]);
 
-  const protocolTVL = (Number(vaultInfo.aUSDCBalance) + Number(vaultInfo.cUSDTBalance)) / 1e18;
-  const userSharePercent = vaultInfo.totalTokensIssued > 0n
-    ? ((seniorBalance + juniorBalance) / (Number(vaultInfo.totalTokensIssued) / 1e18) * 100)
-    : 0;
-
-  // Risk Assessment
-  const getRiskProfile = () => {
+  // Memoized Risk Assessment
+  const riskProfile = useMemo(() => {
     const totalTokens = seniorBalance + juniorBalance;
     if (totalTokens === 0) return { level: 'None', color: 'slate', percentage: 0 };
 
@@ -54,9 +56,7 @@ export const usePortfolioCalculations = (seniorPrice: string, juniorPrice: strin
     if (seniorRatio >= 0.4) return { level: 'Balanced', color: 'green', percentage: seniorRatio * 100 };
     if (seniorRatio >= 0.2) return { level: 'Growth', color: 'yellow', percentage: seniorRatio * 100 };
     return { level: 'Aggressive', color: 'red', percentage: seniorRatio * 100 };
-  };
-
-  const riskProfile = getRiskProfile();
+  }, [seniorBalance, juniorBalance]);
 
   return {
     formatTokenAmount,
