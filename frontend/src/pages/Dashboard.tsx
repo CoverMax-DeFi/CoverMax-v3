@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useWeb3 } from '@/context/PrivyWeb3Context';
+import { toast } from '@/hooks/use-toast';
 import Navbar from '@/components/Navbar';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -107,49 +108,95 @@ const Dashboard = () => {
 
   // Rebalancing handler
   const handleRebalance = async (targetPercent: number) => {
-    if (!seniorTokenAddress || !juniorTokenAddress || !swapExactTokensForTokens || !getAmountsOut) return;
+    if (!seniorTokenAddress || !juniorTokenAddress || !swapExactTokensForTokens || !getAmountsOut) {
+      toast.error('Missing required contracts for rebalancing');
+      return;
+    }
 
     const currentSeniorPercent = riskProfile.percentage;
     const percentDiff = targetPercent - currentSeniorPercent;
 
-    if (Math.abs(percentDiff) < 1) return;
+    console.log(`Rebalancing from ${currentSeniorPercent}% to ${targetPercent}% senior (diff: ${percentDiff}%)`);
+    console.log(`Current balances: Senior=${seniorBalance}, Junior=${juniorBalance}`);
+    
+    // Allow smaller adjustments to reach exact 50/50 split
+    if (Math.abs(percentDiff) < 0.1) {
+      toast.info('Portfolio is already at target allocation');
+      return;
+    }
 
     setIsRebalancing(true);
+    toast.info(`Rebalancing to ${targetPercent}% Senior / ${100 - targetPercent}% Junior...`);
+    
     try {
       let amountIn: string;
       let path: string[];
 
+      // Calculate current USD values
+      const seniorValueUSD = seniorBalance * parseFloat(seniorPrice);
+      const juniorValueUSD = juniorBalance * parseFloat(juniorPrice);
+      const totalValueUSD = seniorValueUSD + juniorValueUSD;
+
+      console.log(`Current USD values: Senior=$${seniorValueUSD.toFixed(2)}, Junior=$${juniorValueUSD.toFixed(2)}, Total=$${totalValueUSD.toFixed(2)}`);
+
       if (targetPercent === 100) {
+        // Convert all junior to senior
         amountIn = juniorBalance.toFixed(18);
         path = [juniorTokenAddress, seniorTokenAddress];
+        console.log(`Converting all ${juniorBalance} junior tokens to senior`);
       } else if (targetPercent === 0) {
+        // Convert all senior to junior  
         amountIn = seniorBalance.toFixed(18);
         path = [seniorTokenAddress, juniorTokenAddress];
+        console.log(`Converting all ${seniorBalance} senior tokens to junior`);
       } else if (percentDiff > 0) {
-        const totalTokens = seniorBalance + juniorBalance;
-        const targetSeniorAmount = (totalTokens * targetPercent) / 100;
-        const seniorNeeded = targetSeniorAmount - seniorBalance;
-        const juniorToSwap = Math.min(seniorNeeded / parseFloat(juniorPrice), juniorBalance);
-        amountIn = juniorToSwap.toFixed(18);
+        // Need more senior tokens - swap junior to senior
+        const targetSeniorValueUSD = (totalValueUSD * targetPercent) / 100;
+        const seniorValueNeededUSD = targetSeniorValueUSD - seniorValueUSD;
+        const juniorToSwapUSD = Math.min(seniorValueNeededUSD, juniorValueUSD);
+        const juniorToSwap = juniorToSwapUSD / parseFloat(juniorPrice);
+        
+        amountIn = Math.min(juniorToSwap, juniorBalance).toFixed(18);
         path = [juniorTokenAddress, seniorTokenAddress];
+        console.log(`Need to swap $${juniorToSwapUSD.toFixed(2)} worth of junior (${juniorToSwap.toFixed(6)} tokens) to senior`);
       } else {
-        const totalTokens = seniorBalance + juniorBalance;
-        const targetJuniorAmount = (totalTokens * (100 - targetPercent)) / 100;
-        const juniorNeeded = targetJuniorAmount - juniorBalance;
-        const seniorToSwap = Math.min(juniorNeeded * parseFloat(juniorPrice), seniorBalance);
-        amountIn = seniorToSwap.toFixed(18);
+        // Need more junior tokens - swap senior to junior
+        const targetJuniorValueUSD = (totalValueUSD * (100 - targetPercent)) / 100;
+        const juniorValueNeededUSD = targetJuniorValueUSD - juniorValueUSD;
+        const seniorToSwapUSD = Math.min(juniorValueNeededUSD, seniorValueUSD);
+        const seniorToSwap = seniorToSwapUSD / parseFloat(seniorPrice);
+        
+        amountIn = Math.min(seniorToSwap, seniorBalance).toFixed(18);
         path = [seniorTokenAddress, juniorTokenAddress];
+        console.log(`Need to swap $${seniorToSwapUSD.toFixed(2)} worth of senior (${seniorToSwap.toFixed(6)} tokens) to junior`);
       }
 
-      if (parseFloat(amountIn) > 0) {
+      if (parseFloat(amountIn) > 0.000001) { // Minimum swap threshold
+        console.log(`Executing swap: ${amountIn} tokens via path [${path.join(' -> ')}]`);
+        
         const amountsOut = await getAmountsOut(amountIn, path);
-        const minAmountOut = (parseFloat(amountsOut) * 0.95).toFixed(18);
+        const minAmountOut = (parseFloat(amountsOut) * 0.98).toFixed(18); // 2% slippage
+        
+        console.log(`Expected output: ${amountsOut}, minimum output: ${minAmountOut}`);
+        
         await swapExactTokensForTokens(amountIn, minAmountOut, path);
+        console.log('Swap executed successfully');
+        
+        toast.success(`Portfolio rebalanced to ${targetPercent}% Senior / ${100 - targetPercent}% Junior`);
+      } else {
+        toast.info('Swap amount too small to execute');
       }
 
       await refreshData();
     } catch (error) {
       console.error('Rebalancing failed:', error);
+      if (error instanceof Error && 'reason' in error) {
+        toast.error(`Rebalancing failed: ${(error as { reason: string }).reason}`);
+      } else if (error instanceof Error) {
+        toast.error(`Rebalancing failed: ${error.message}`);
+      } else {
+        toast.error('Rebalancing failed. Please try again.');
+      }
     } finally {
       setIsRebalancing(false);
     }
