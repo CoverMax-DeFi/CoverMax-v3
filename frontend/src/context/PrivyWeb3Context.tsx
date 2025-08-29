@@ -617,10 +617,10 @@ const InnerWeb3Provider: React.FC<{ children: ReactNode }> = ({ children }) => {
       toast.success(`Successfully deposited ${amount} ${asset}`);
       
       await refreshData();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error depositing:', error);
-      if (error.reason) {
-        toast.error(`Failed to deposit: ${error.reason}`);
+      if (error instanceof Error && 'reason' in error) {
+        toast.error(`Failed to deposit: ${(error as { reason: string }).reason}`);
       } else {
         toast.error('Failed to deposit assets');
       }
@@ -661,10 +661,10 @@ const InnerWeb3Provider: React.FC<{ children: ReactNode }> = ({ children }) => {
       toast.success('Withdrawal successful');
       
       await refreshData();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error withdrawing:', error);
-      if (error.reason) {
-        toast.error(`Failed to withdraw: ${error.reason}`);
+      if (error instanceof Error && 'reason' in error) {
+        toast.error(`Failed to withdraw: ${(error as { reason: string }).reason}`);
       } else {
         toast.error('Failed to withdraw');
       }
@@ -692,10 +692,10 @@ const InnerWeb3Provider: React.FC<{ children: ReactNode }> = ({ children }) => {
       toast.success('Senior tokens withdrawn successfully');
       
       await refreshData();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error withdrawing senior tokens:', error);
-      if (error.reason) {
-        toast.error(`Failed to withdraw: ${error.reason}`);
+      if (error instanceof Error && 'reason' in error) {
+        toast.error(`Failed to withdraw: ${(error as { reason: string }).reason}`);
       } else {
         toast.error('Failed to withdraw senior tokens');
       }
@@ -723,10 +723,10 @@ const InnerWeb3Provider: React.FC<{ children: ReactNode }> = ({ children }) => {
       toast.success('All tokens withdrawn successfully');
       
       await refreshData();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error withdrawing all:', error);
-      if (error.reason) {
-        toast.error(`Failed to withdraw: ${error.reason}`);
+      if (error instanceof Error && 'reason' in error) {
+        toast.error(`Failed to withdraw: ${(error as { reason: string }).reason}`);
       } else {
         toast.error('Failed to withdraw all tokens');
       }
@@ -762,10 +762,10 @@ const InnerWeb3Provider: React.FC<{ children: ReactNode }> = ({ children }) => {
       toast.success('Emergency withdrawal successful');
       
       await refreshData();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error in emergency withdrawal:', error);
-      if (error.reason) {
-        toast.error(`Failed to withdraw: ${error.reason}`);
+      if (error instanceof Error && 'reason' in error) {
+        toast.error(`Failed to withdraw: ${(error as { reason: string }).reason}`);
       } else {
         toast.error('Failed to perform emergency withdrawal');
       }
@@ -793,7 +793,7 @@ const InnerWeb3Provider: React.FC<{ children: ReactNode }> = ({ children }) => {
       toast.success('Emergency mode toggled');
       
       await refreshData();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error toggling emergency mode:', error);
       toast.error('Failed to toggle emergency mode - admin access required');
     }
@@ -819,7 +819,7 @@ const InnerWeb3Provider: React.FC<{ children: ReactNode }> = ({ children }) => {
       toast.success('Phase transition forced');
       
       await refreshData();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error forcing phase transition:', error);
       toast.error('Failed to force phase transition - admin access required');
     }
@@ -845,7 +845,7 @@ const InnerWeb3Provider: React.FC<{ children: ReactNode }> = ({ children }) => {
       toast.success('Phase transition forced immediately');
       
       await refreshData();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error forcing immediate phase transition:', error);
       toast.error('Failed to force immediate phase transition - admin access required');
     }
@@ -871,7 +871,7 @@ const InnerWeb3Provider: React.FC<{ children: ReactNode }> = ({ children }) => {
       toast.success('New cycle started');
       
       await refreshData();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error starting new cycle:', error);
       toast.error('Failed to start new cycle - admin access required');
     }
@@ -979,9 +979,10 @@ const InnerWeb3Provider: React.FC<{ children: ReactNode }> = ({ children }) => {
       toast.success('Swap completed');
       
       await refreshData();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Swap failed:', error);
-      toast.error(error.reason || 'Swap failed');
+      const reason = error instanceof Error && 'reason' in error ? (error as { reason: string }).reason : 'Swap failed';
+      toast.error(reason);
     }
   };
 
@@ -1165,9 +1166,10 @@ const InnerWeb3Provider: React.FC<{ children: ReactNode }> = ({ children }) => {
       toast.success('Risk tokens staked');
       
       await refreshData();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to stake risk tokens:', error);
-      toast.error(error.reason || 'Failed to stake risk tokens');
+      const reason = error instanceof Error && 'reason' in error ? (error as { reason: string }).reason : 'Failed to stake risk tokens';
+      toast.error(reason);
     }
   };
 
@@ -1230,9 +1232,10 @@ const InnerWeb3Provider: React.FC<{ children: ReactNode }> = ({ children }) => {
       toast.success('Risk tokens unstaked');
       
       await refreshData();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to unstake risk tokens:', error);
-      toast.error(error.reason || 'Failed to unstake risk tokens');
+      const reason = error instanceof Error && 'reason' in error ? (error as { reason: string }).reason : 'Failed to unstake risk tokens';
+      toast.error(reason);
     }
   };
 

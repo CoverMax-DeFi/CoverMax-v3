@@ -14,6 +14,7 @@ export default defineConfig(({ mode }) => ({
     // Only use componentTagger in development and when available
     ...(mode === 'development' ? (() => {
       try {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
         const { componentTagger } = require("lovable-tagger");
         return [componentTagger()];
       } catch {

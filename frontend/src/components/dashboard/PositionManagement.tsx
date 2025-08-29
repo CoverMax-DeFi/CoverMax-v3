@@ -7,6 +7,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
 import { Phase } from '@/config/contracts';
 import { useWeb3 } from '@/context/PrivyWeb3Context';
+import { VaultInfo } from '@/types';
 import {
   Activity,
   Minus,
@@ -26,7 +27,7 @@ interface PositionManagementProps {
   isWithdrawing: boolean;
   onRebalance: (targetPercent: number) => void;
   onWithdraw: (amount: string) => void;
-  vaultInfo: any;
+  vaultInfo: VaultInfo;
 }
 
 const PositionManagement: React.FC<PositionManagementProps> = ({
