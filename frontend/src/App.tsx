@@ -10,7 +10,6 @@ import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import Insurance from "./pages/Insurance";
 import Admin from "./pages/Admin";
-import WidgetDemo from "./pages/WidgetDemo";
 import NotFound from "./pages/NotFound";
 import { Navigate } from "react-router-dom";
 
@@ -33,7 +32,6 @@ const App: React.FC = () => {
           <Route path="/insurance" element={<Insurance />} />
           <Route path="/advanced" element={<Navigate to="/dashboard" replace />} />
           <Route path="/admin" element={<Admin />} />
-          <Route path="/widget-demo" element={<WidgetDemo />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

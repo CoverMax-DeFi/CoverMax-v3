@@ -70,13 +70,6 @@ const Index = () => {
             </Link>
 
             <div className="flex items-center space-x-6">
-              <Button
-                variant="ghost"
-                asChild
-                className="text-slate-300 hover:text-white hover:bg-slate-800"
-              >
-                <Link to="/widget-demo">Widget Demo</Link>
-              </Button>
 
               <Button
                 variant="ghost"
