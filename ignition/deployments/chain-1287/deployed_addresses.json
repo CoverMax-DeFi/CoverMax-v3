@@ -1,11 +1,11 @@
 {
-  "RiskTokenSequentialModule#MockAUSDC": "0x9f4d4d392123D948DfF5dB77DE41107e8CCc0484",
-  "RiskTokenSequentialModule#MockCUSDT": "0x980eD65F0C9E409D9d50f4E2b4E03445b6E88F6D",
-  "RiskTokenSequentialModule#WETH": "0x68566FdE9969A27188e70507fa175B8E6f82EdB4",
-  "RiskTokenSequentialModule#UniswapV2Factory": "0x6Dfb24eA1FF9E28DDEbD1eAEfF3d019AeB59E064",
-  "RiskTokenSequentialModule#UniswapV2Router02": "0x7eE52904D79725d524B949c3F60E20e53077f3fD",
-  "RiskTokenSequentialModule#RiskVault": "0xd15870D60d442B4116c85D2d756969f856143EF2",
-  "RiskTokenSequentialModule#juniorTokenContract": "0x4647011eaF6B234662C494c57Df29A83aEEA3dc2",
-  "RiskTokenSequentialModule#seniorTokenContract": "0x39241c2eeF295aeD0FD83F3B5E8896ad660e213C",
-  "RiskTokenSequentialModule#pairContract": "0x6cbBdf1473E5Dbe12903787E702Ebc2e64A402fA"
+  "RiskTokenSequentialModule#MockAUSDC": "0xF40680bD83e166884423861e8EbdEDF8c9A4fc38",
+  "RiskTokenSequentialModule#MockCUSDT": "0xff26Ac53F24C283fD70809aA535fFf23B0948AD2",
+  "RiskTokenSequentialModule#WETH": "0x1dE6780F59a8c2d16dF76Ba8D2345a35307AD9db",
+  "RiskTokenSequentialModule#UniswapV2Factory": "0x3b354F688A86601DD153fB8D6bAC50FdA6B6A5c1",
+  "RiskTokenSequentialModule#UniswapV2Router02": "0x323c4DE3B7267fe9A4bEE9C9379d2099170f57cd",
+  "RiskTokenSequentialModule#RiskVault": "0x9Db400b48946a4EA1f9FD32515C0dd8F1C08Fc6f",
+  "RiskTokenSequentialModule#juniorTokenContract": "0x428725D392338Db6b0D0bB7A511D42F17111893D",
+  "RiskTokenSequentialModule#seniorTokenContract": "0xc015FF3A6EAF86050E7B3693cE1337e99e88D123",
+  "RiskTokenSequentialModule#pairContract": "0x0B56dd7f83157e88F39690316b65c37F60FCdDB7"
 }

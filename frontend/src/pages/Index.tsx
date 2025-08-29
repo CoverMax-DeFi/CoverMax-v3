@@ -47,7 +47,7 @@ const Index = () => {
   const stats = [
     { label: "Total Value Locked", value: `$${totalValueLocked || "0"}`, suffix: "" },
     { label: "Est. APY", value: estimatedAPY, suffix: "%" },
-    { label: "Protocol Phases", value: "4", suffix: "" },
+    { label: "Protocol Phases", value: "3", suffix: "" },
     { label: "Emergency Mode", value: vaultInfo.emergencyMode ? "Active" : "Ready", suffix: "" }
   ];
 
