@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useWeb3 } from '@/context/PrivyWeb3Context';
 import { ContractName, getContractAddress } from '@/config/contracts';
 import { ethers } from 'ethers';
+import { REFRESH_INTERVALS, POOL_RESERVE_MIN_CHANGE } from '@/constants/trading';
 
 export const usePricing = () => {
   const {
@@ -71,7 +72,7 @@ export const usePricing = () => {
         const newSenior = parseFloat(seniorReserve);
         const newJunior = parseFloat(juniorReserve);
         
-        if (Math.abs(currentSenior - newSenior) > 0.01 || Math.abs(currentJunior - newJunior) > 0.01) {
+        if (Math.abs(currentSenior - newSenior) > POOL_RESERVE_MIN_CHANGE || Math.abs(currentJunior - newJunior) > POOL_RESERVE_MIN_CHANGE) {
           setPoolReserves({
             senior: seniorReserve,
             junior: juniorReserve,
@@ -90,7 +91,7 @@ export const usePricing = () => {
     const interval = setInterval(() => {
       fetchTokenPrices();
       fetchPoolReserves();
-    }, 30000);
+    }, REFRESH_INTERVALS.PRICING_UPDATE);
     
     return () => clearInterval(interval);
   }, [seniorTokenAddress, juniorTokenAddress, getAmountsOut, getPairReserves, currentChain]);

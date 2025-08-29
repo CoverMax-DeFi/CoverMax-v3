@@ -1,12 +1,14 @@
 import { useWeb3 } from '@/context/PrivyWeb3Context';
 import { ethers } from 'ethers';
 import { useMemo } from 'react';
+import { RISK_THRESHOLDS, WEI_PRECISION } from '@/constants/trading';
+import { RISK_PROFILE_COLORS, RISK_PROFILE_LABELS, DEFAULT_DECIMAL_PLACES } from '@/constants/ui';
 
 export const usePortfolioCalculations = (seniorPrice: string, juniorPrice: string) => {
   const { balances, vaultInfo } = useWeb3();
 
   const formatTokenAmount = (amount: bigint) => ethers.formatEther(amount);
-  const formatNumber = (num: number, decimals = 2) => num.toFixed(decimals);
+  const formatNumber = (num: number, decimals = DEFAULT_DECIMAL_PLACES) => num.toFixed(decimals);
 
   // Memoized calculated values
   const { seniorBalance, juniorBalance, aUSDCBalance, cUSDTBalance, lpBalance } = useMemo(() => ({
@@ -39,23 +41,47 @@ export const usePortfolioCalculations = (seniorPrice: string, juniorPrice: strin
 
   const { totalPortfolioValue, protocolTVL, userSharePercent } = useMemo(() => ({
     totalPortfolioValue: (seniorBalance * parseFloat(seniorPrice)) + (juniorBalance * parseFloat(juniorPrice)),
-    protocolTVL: (Number(vaultInfo.aUSDCBalance) + Number(vaultInfo.cUSDTBalance)) / 1e18,
+    protocolTVL: (Number(vaultInfo.aUSDCBalance) + Number(vaultInfo.cUSDTBalance)) / WEI_PRECISION,
     userSharePercent: vaultInfo.totalTokensIssued > 0n
-      ? ((seniorBalance + juniorBalance) / (Number(vaultInfo.totalTokensIssued) / 1e18) * 100)
+      ? ((seniorBalance + juniorBalance) / (Number(vaultInfo.totalTokensIssued) / WEI_PRECISION) * 100)
       : 0,
   }), [seniorBalance, juniorBalance, seniorPrice, juniorPrice, vaultInfo.aUSDCBalance, vaultInfo.cUSDTBalance, vaultInfo.totalTokensIssued]);
 
   // Memoized Risk Assessment
   const riskProfile = useMemo(() => {
     const totalTokens = seniorBalance + juniorBalance;
-    if (totalTokens === 0) return { level: 'None', color: 'slate', percentage: 0 };
+    if (totalTokens === 0) return { 
+      level: RISK_PROFILE_LABELS.NONE, 
+      color: RISK_PROFILE_COLORS.None, 
+      percentage: 0 
+    };
 
     const seniorRatio = seniorBalance / totalTokens;
-    if (seniorRatio >= 0.8) return { level: 'Conservative', color: 'blue', percentage: seniorRatio * 100 };
-    if (seniorRatio >= 0.6) return { level: 'Moderate', color: 'purple', percentage: seniorRatio * 100 };
-    if (seniorRatio >= 0.4) return { level: 'Balanced', color: 'green', percentage: seniorRatio * 100 };
-    if (seniorRatio >= 0.2) return { level: 'Growth', color: 'yellow', percentage: seniorRatio * 100 };
-    return { level: 'Aggressive', color: 'red', percentage: seniorRatio * 100 };
+    if (seniorRatio >= RISK_THRESHOLDS.CONSERVATIVE) return { 
+      level: RISK_PROFILE_LABELS.CONSERVATIVE, 
+      color: RISK_PROFILE_COLORS.Conservative, 
+      percentage: seniorRatio * 100 
+    };
+    if (seniorRatio >= RISK_THRESHOLDS.MODERATE) return { 
+      level: RISK_PROFILE_LABELS.MODERATE, 
+      color: RISK_PROFILE_COLORS.Moderate, 
+      percentage: seniorRatio * 100 
+    };
+    if (seniorRatio >= RISK_THRESHOLDS.BALANCED) return { 
+      level: RISK_PROFILE_LABELS.BALANCED, 
+      color: RISK_PROFILE_COLORS.Balanced, 
+      percentage: seniorRatio * 100 
+    };
+    if (seniorRatio >= RISK_THRESHOLDS.GROWTH) return { 
+      level: RISK_PROFILE_LABELS.GROWTH, 
+      color: RISK_PROFILE_COLORS.Growth, 
+      percentage: seniorRatio * 100 
+    };
+    return { 
+      level: RISK_PROFILE_LABELS.AGGRESSIVE, 
+      color: RISK_PROFILE_COLORS.Aggressive, 
+      percentage: seniorRatio * 100 
+    };
   }, [seniorBalance, juniorBalance]);
 
   return {

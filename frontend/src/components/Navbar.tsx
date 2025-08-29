@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Link, useLocation } from 'react-router-dom';
 import { useWeb3 } from '@/context/PrivyWeb3Context';
 import NetworkSelector from '@/components/NetworkSelector';
+import { ADDRESS_DISPLAY_LENGTH } from '@/constants/ui';
 
 const Navbar: React.FC = () => {
   const location = useLocation();
@@ -14,7 +15,7 @@ const Navbar: React.FC = () => {
 
   // Format address for display
   const formatAddress = (addr: string) => {
-    return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
+    return `${addr.slice(0, ADDRESS_DISPLAY_LENGTH.START)}...${addr.slice(-ADDRESS_DISPLAY_LENGTH.END)}`;
   };
 
   return (

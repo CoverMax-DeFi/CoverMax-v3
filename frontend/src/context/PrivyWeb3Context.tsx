@@ -24,6 +24,13 @@ import {
   UNISWAP_V2_ROUTER_ABI,
   UNISWAP_V2_PAIR_ABI
 } from '@/config/abis';
+import { 
+  SLIPPAGE_TOLERANCE, 
+  SLIPPAGE_PERCENT_BIGINT,
+  PERCENTAGE_DIVISOR_BIGINT,
+  TRANSACTION_DEADLINE_MINUTES, 
+  REFRESH_INTERVALS 
+} from '@/constants/trading';
 
 interface TokenBalances {
   seniorTokens: bigint;
@@ -487,7 +494,7 @@ const InnerWeb3Provider: React.FC<{ children: ReactNode }> = ({ children }) => {
     
     // Simple debouncing
     const now = Date.now();
-    if (now - lastRefreshTime.current < 500 || isRefreshing.current) {
+    if (now - lastRefreshTime.current < REFRESH_INTERVALS.DEBOUNCE_DELAY || isRefreshing.current) {
       return;
     }
     
@@ -912,7 +919,7 @@ const InnerWeb3Provider: React.FC<{ children: ReactNode }> = ({ children }) => {
     // Add a delay after chain change before starting auto-refresh
     const timeoutId = setTimeout(() => {
       // Use longer intervals for Hedera to avoid rate limiting
-      const refreshInterval = currentChain === 296 ? 8000 : 4000; // 8s for Hedera, 4s for others
+      const refreshInterval = currentChain === 296 ? REFRESH_INTERVALS.DATA_REFRESH_HEDERA : REFRESH_INTERVALS.DATA_REFRESH_DEFAULT;
       
       interval = setInterval(() => {
         refreshData();
@@ -935,7 +942,7 @@ const InnerWeb3Provider: React.FC<{ children: ReactNode }> = ({ children }) => {
     try {
       const amountInWei = ethers.parseEther(amountIn);
       const amountOutMinWei = ethers.parseEther(amountOutMin);
-      const deadline = Math.floor(Date.now() / 1000) + 60 * 20; // 20 minutes
+      const deadline = Math.floor(Date.now() / 1000) + 60 * TRANSACTION_DEADLINE_MINUTES;
 
       // Check token balance first
       const inputToken = new Contract(path[0], ERC20_ABI, signer);
@@ -1040,7 +1047,7 @@ const InnerWeb3Provider: React.FC<{ children: ReactNode }> = ({ children }) => {
     try {
       const amountADesired = ethers.parseEther(tokenAAmount);
       const amountBDesired = ethers.parseEther(tokenBAmount);
-      const deadline = Math.floor(Date.now() / 1000) + 60 * 20; // 20 minutes
+      const deadline = Math.floor(Date.now() / 1000) + 60 * TRANSACTION_DEADLINE_MINUTES;
 
       // Check token balances first
       const tokenAContract = new Contract(tokenA, ERC20_ABI, signer);
@@ -1100,8 +1107,8 @@ const InnerWeb3Provider: React.FC<{ children: ReactNode }> = ({ children }) => {
       }
 
       // Update amounts and slippage calculations with final amounts
-      const amountAMin = finalAmountADesired * 95n / 100n; // 5% slippage
-      const amountBMin = finalAmountBDesired * 95n / 100n; // 5% slippage
+      const amountAMin = finalAmountADesired * SLIPPAGE_PERCENT_BIGINT / PERCENTAGE_DIVISOR_BIGINT;
+      const amountBMin = finalAmountBDesired * SLIPPAGE_PERCENT_BIGINT / PERCENTAGE_DIVISOR_BIGINT;
 
       const routerAddress = getCurrentChainAddress(ContractName.UNISWAP_V2_ROUTER);
       if (!routerAddress) {
@@ -1180,7 +1187,7 @@ const InnerWeb3Provider: React.FC<{ children: ReactNode }> = ({ children }) => {
     }
 
     try {
-      const deadline = Math.floor(Date.now() / 1000) + 60 * 20; // 20 minutes
+      const deadline = Math.floor(Date.now() / 1000) + 60 * TRANSACTION_DEADLINE_MINUTES;
 
       // Get contract addresses
       const pairAddress = getCurrentChainAddress(ContractName.SENIOR_JUNIOR_PAIR);
