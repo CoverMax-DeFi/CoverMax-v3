@@ -186,7 +186,7 @@ const DepositStrategies: React.FC<DepositStrategiesProps> = ({
                     <div>Depositing ${amount} will get you ~{formatNumber(parseFloat(amount) / parseFloat(seniorPrice))} Senior tokens (priority claims)</div>
                   )}
                   {activeStrategy === 'balanced' && (
-                    <div>Depositing ${amount} will get you ~{formatNumber((parseFloat(amount) / 2) / parseFloat(seniorPrice))} Senior + ~{formatNumber((parseFloat(amount) / 2) / parseFloat(juniorPrice))} Junior tokens</div>
+                    <div>Depositing ${amount} will get you {formatNumber(parseFloat(amount) / 2)} Senior + {formatNumber(parseFloat(amount) / 2)} Junior tokens</div>
                   )}
                   {activeStrategy === 'upside' && (
                     <div>Depositing ${amount} will get you ~{formatNumber(parseFloat(amount) / parseFloat(juniorPrice))} Junior tokens (higher upside potential)</div>
