@@ -52,6 +52,7 @@ const Dashboard = () => {
     aUSDCBalance,
     cUSDTBalance,
     lpBalance,
+    calculateLPValueUSD,
     totalPortfolioValue,
     protocolTVL,
     userSharePercent,
@@ -364,6 +365,7 @@ const Dashboard = () => {
               seniorBalance={seniorBalance}
               juniorBalance={juniorBalance}
               lpBalance={lpBalance}
+              calculateLPValueUSD={calculateLPValueUSD}
               seniorPrice={seniorPrice}
               juniorPrice={juniorPrice}
               poolReserves={poolReserves}

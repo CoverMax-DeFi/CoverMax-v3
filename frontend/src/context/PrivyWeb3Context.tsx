@@ -1171,7 +1171,7 @@ const InnerWeb3Provider: React.FC<{ children: ReactNode }> = ({ children }) => {
     }
   };
 
-  const unstakeRiskTokens = async (desiredTotalLiquidity: string, tokenA: string, tokenB: string) => {
+  const unstakeRiskTokens = async (lpTokenAmount: string, tokenA: string, tokenB: string) => {
     if (!signer || !address) {
       toast.error('Please connect your wallet');
       return;
@@ -1196,13 +1196,8 @@ const InnerWeb3Provider: React.FC<{ children: ReactNode }> = ({ children }) => {
       const totalSupply = await pairContract.totalSupply();
       const userLPBalance = await pairContract.balanceOf(address);
 
-      // Calculate total liquidity in the pool (reserve0 + reserve1)
-      const totalPoolLiquidity = reserve0 + reserve1;
-      
-      // Calculate how much LP tokens to burn to get the desired total liquidity
-      // LP tokens to burn = (desired liquidity / total pool liquidity) * total LP supply
-      const desiredLiquidityWei = ethers.parseEther(desiredTotalLiquidity);
-      const lpTokensToBurn = (desiredLiquidityWei * totalSupply) / totalPoolLiquidity;
+      // Convert LP token amount to wei (user input is in token units, not wei)
+      const lpTokensToBurn = ethers.parseEther(lpTokenAmount);
 
       // Make sure user has enough LP tokens
       if (lpTokensToBurn > userLPBalance) {

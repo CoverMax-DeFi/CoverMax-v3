@@ -14,6 +14,25 @@ export const usePortfolioCalculations = (seniorPrice: string, juniorPrice: strin
   const cUSDTBalance = Number(formatTokenAmount(balances.cUSDT));
   const lpBalance = Number(formatTokenAmount(balances.lpTokens));
   
+  // Calculate LP token USD value using pool reserves
+  const calculateLPValueUSD = (poolReserves: { senior: string; junior: string }) => {
+    if (!poolReserves.senior || !poolReserves.junior || lpBalance === 0) return 0;
+    
+    const seniorReserve = parseFloat(poolReserves.senior);
+    const juniorReserve = parseFloat(poolReserves.junior);
+    
+    // Total pool value in USD
+    const totalPoolValueUSD = (seniorReserve * parseFloat(seniorPrice)) + (juniorReserve * parseFloat(juniorPrice));
+    
+    // Assume total LP supply is approximately equal to the geometric mean of reserves for typical AMM
+    // This is an approximation - ideally we'd fetch the actual totalSupply from the pair contract
+    const estimatedTotalLPSupply = Math.sqrt(seniorReserve * juniorReserve);
+    
+    if (estimatedTotalLPSupply === 0) return 0;
+    
+    // User's share of pool value
+    return (lpBalance / estimatedTotalLPSupply) * totalPoolValueUSD;
+  };
 
   const totalPortfolioValue =
     (seniorBalance * parseFloat(seniorPrice)) +
@@ -47,6 +66,7 @@ export const usePortfolioCalculations = (seniorPrice: string, juniorPrice: strin
     aUSDCBalance,
     cUSDTBalance,
     lpBalance,
+    calculateLPValueUSD,
     totalPortfolioValue,
     protocolTVL,
     userSharePercent,

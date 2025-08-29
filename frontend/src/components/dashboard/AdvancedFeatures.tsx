@@ -15,6 +15,7 @@ interface AdvancedFeaturesProps {
   seniorBalance: number;
   juniorBalance: number;
   lpBalance: number;
+  calculateLPValueUSD: (poolReserves: { senior: string; junior: string }) => number;
   seniorPrice: string;
   juniorPrice: string;
   poolReserves: { senior: string; junior: string };
@@ -30,6 +31,7 @@ const AdvancedFeatures: React.FC<AdvancedFeaturesProps> = ({
   seniorBalance,
   juniorBalance,
   lpBalance,
+  calculateLPValueUSD,
   seniorPrice,
   juniorPrice,
   poolReserves,
@@ -46,6 +48,9 @@ const AdvancedFeatures: React.FC<AdvancedFeaturesProps> = ({
   const [unstakeAmount, setUnstakeAmount] = useState('');
   const [emergencyAmount, setEmergencyAmount] = useState('');
   const [preferredAsset, setPreferredAsset] = useState<'aUSDC' | 'cUSDT'>('aUSDC');
+
+  // Calculate the USD value of LP tokens
+  const lpValueUSD = calculateLPValueUSD(poolReserves);
 
   const handleStakeRiskTokens = () => {
     if (!stakingSeniorAmount || !stakingJuniorAmount) return;
@@ -323,7 +328,7 @@ const AdvancedFeatures: React.FC<AdvancedFeaturesProps> = ({
               </Button>
             </div>
             <p className="text-sm text-slate-400 mt-1">
-              Staked Balance: {formatNumber(lpBalance)}
+              Staked Balance: {formatNumber(lpBalance)} LP tokens (${formatNumber(lpValueUSD)})
             </p>
           </div>
 
