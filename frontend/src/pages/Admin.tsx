@@ -21,6 +21,20 @@ const Admin = () => {
     juniorTokenAddress,
   } = useWeb3();
 
+  // Helper function to format time remaining
+  const formatTimeRemaining = (timeRemainingBigInt: bigint): string => {
+    const timeRemaining = Number(timeRemainingBigInt);
+    if (timeRemaining <= 0) return "0s";
+    
+    const hours = Math.floor(timeRemaining / 3600);
+    const minutes = Math.floor((timeRemaining % 3600) / 60);
+    const seconds = timeRemaining % 60;
+    
+    if (hours > 0) return `${hours}h ${minutes}m`;
+    if (minutes > 0) return `${minutes}m ${seconds}s`;
+    return `${seconds}s`;
+  };
+
   if (!isConnected) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
@@ -142,7 +156,7 @@ const Admin = () => {
             <CardContent className="space-y-4">
               <div className="p-4 bg-slate-700/50 rounded-lg backdrop-blur-sm">
                 <p className="text-sm text-slate-400 mb-2">Phase Progression:</p>
-                <div className="flex items-center space-x-2 text-sm">
+                <div className="flex items-center space-x-2 text-sm mb-2">
                   <span className={Number(vaultInfo.currentPhase) === Phase.ACTIVE ? 'font-bold text-white' : 'text-slate-300'}>
                     Active Period (5d)
                   </span>
@@ -155,51 +169,76 @@ const Admin = () => {
                     Final Claims Period (1d)
                   </span>
                 </div>
+                <div className="flex items-center justify-center mt-2">
+                  <span className="text-slate-400 text-xs">↓ Manual cycle restart required ↓</span>
+                </div>
               </div>
 
               <div className="space-y-2">
                 <Button
                   onClick={forcePhaseTransitionImmediate}
                   variant="outline"
-                  className="w-full bg-orange-700 hover:bg-orange-600 text-white border-orange-600 hover:border-orange-500"
+                  disabled={Number(vaultInfo.currentPhase) === Phase.FINAL_CLAIMS}
+                  className={`w-full ${
+                    Number(vaultInfo.currentPhase) === Phase.FINAL_CLAIMS
+                      ? 'bg-slate-600 cursor-not-allowed opacity-50 text-slate-400 border-slate-600'
+                      : 'bg-orange-700 hover:bg-orange-600 text-white border-orange-600 hover:border-orange-500'
+                  }`}
                 >
                   <RefreshCw className="mr-2 h-4 w-4" />
                   Force Phase Transition (Immediate)
                 </Button>
-
-                <Button
-                  onClick={startNewCycle}
-                  variant="default"
-                  disabled={Number(vaultInfo.currentPhase) !== Phase.FINAL_CLAIMS}
-                  className={`w-full ${
-                    Number(vaultInfo.currentPhase) === Phase.FINAL_CLAIMS
-                      ? 'bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700'
-                      : 'bg-slate-600 cursor-not-allowed opacity-50'
-                  }`}
-                >
-                  <PlayCircle className="mr-2 h-4 w-4" />
-                  Restart Cycle
-                </Button>
+                
+                {Number(vaultInfo.currentPhase) === Phase.FINAL_CLAIMS && (
+                  <Alert className="bg-amber-900/20 border-amber-700 text-amber-300">
+                    <AlertDescription className="text-xs">
+                      Force phase transition cannot proceed from Final Claims. Use "Start New Cycle" instead.
+                    </AlertDescription>
+                  </Alert>
+                )}
 
                 {Number(vaultInfo.currentPhase) === Phase.FINAL_CLAIMS && (
+                  <div className="space-y-2">
+                    <Button
+                      onClick={startNewCycle}
+                      variant="default"
+                      disabled={Number(vaultInfo.timeRemaining) > 0}
+                      className={`w-full ${
+                        Number(vaultInfo.timeRemaining) > 0
+                          ? 'bg-slate-600 cursor-not-allowed opacity-50'
+                          : 'bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700'
+                      }`}
+                    >
+                      <PlayCircle className="mr-2 h-4 w-4" />
+                      {Number(vaultInfo.timeRemaining) > 0 ? 'Start New Cycle' : 'Start New Cycle (Ready)'}
+                    </Button>
+                    {Number(vaultInfo.timeRemaining) > 0 && (
+                      <Alert className="bg-blue-900/20 border-blue-700 text-blue-300">
+                        <AlertDescription className="text-xs">
+                          Final Claims period must complete. Time remaining: {formatTimeRemaining(vaultInfo.timeRemaining)}
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                  </div>
+                )}
+                
+                {Number(vaultInfo.currentPhase) !== Phase.FINAL_CLAIMS && (
                   <Button
-                    onClick={startNewCycle}
                     variant="default"
-                    className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                    disabled={true}
+                    className="w-full bg-slate-600 cursor-not-allowed opacity-50"
                   >
                     <PlayCircle className="mr-2 h-4 w-4" />
-                    Start New Cycle
+                    Start New Cycle (Only available in Final Claims)
                   </Button>
                 )}
               </div>
 
-              {Number(vaultInfo.currentPhase) !== Phase.FINAL_CLAIMS && (
-                <Alert className="bg-slate-700/50 border-slate-600 text-slate-300">
-                  <AlertDescription>
-                    Cycle restart is only available from the Final Claims phase
-                  </AlertDescription>
-                </Alert>
-              )}
+              <Alert className="bg-slate-700/50 border-slate-600 text-slate-300">
+                <AlertDescription className="text-xs">
+                  <strong>Note:</strong> Starting a new cycle requires the Final Claims period (1 day) to be completed and can only be initiated from that phase.
+                </AlertDescription>
+              </Alert>
             </CardContent>
           </Card>
 
@@ -274,8 +313,10 @@ const Admin = () => {
                   <h4 className="font-medium text-white mb-2">Phase Management</h4>
                   <ul className="space-y-1 text-slate-300">
                     <li>• Phase transitions normally occur automatically based on time</li>
-                    <li>• Force phase transition should only be used in exceptional circumstances</li>
-                    <li>• Starting a new cycle resets the protocol to the Deposit phase</li>
+                    <li>• Force phase transition works for Active → Claims → Final Claims only</li>
+                    <li>• Force transition is disabled in Final Claims phase</li>
+                    <li>• Starting a new cycle requires completion of Final Claims period (1 day)</li>
+                    <li>• New cycles reset the protocol to Active phase</li>
                   </ul>
                 </div>
               </div>
