@@ -337,6 +337,13 @@ const Index = () => {
                 className="h-20 md:h-24 w-auto object-contain filter brightness-0 invert opacity-80 hover:opacity-100 transition-opacity"
               />
             </div>
+            <div className="flex items-center justify-center">
+              <img
+                src="/web3 foundation_grants_badge_white.svg"
+                alt="Web3 Foundation"
+                className="h-36 md:h-40 w-auto object-contain opacity-80 hover:opacity-100 transition-opacity"
+              />
+            </div>
           </div>
         </div>
       </section>
