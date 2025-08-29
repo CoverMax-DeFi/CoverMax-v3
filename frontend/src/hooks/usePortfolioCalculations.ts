@@ -13,6 +13,7 @@ export const usePortfolioCalculations = (seniorPrice: string, juniorPrice: strin
   const aUSDCBalance = Number(formatTokenAmount(balances.aUSDC));
   const cUSDTBalance = Number(formatTokenAmount(balances.cUSDT));
   const lpBalance = Number(formatTokenAmount(balances.lpTokens));
+  
 
   const totalPortfolioValue =
     (seniorBalance * parseFloat(seniorPrice)) +

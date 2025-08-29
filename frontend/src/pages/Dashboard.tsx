@@ -364,6 +364,9 @@ const Dashboard = () => {
               seniorBalance={seniorBalance}
               juniorBalance={juniorBalance}
               lpBalance={lpBalance}
+              seniorPrice={seniorPrice}
+              juniorPrice={juniorPrice}
+              poolReserves={poolReserves}
               formatNumber={formatNumber}
               isExecuting={isExecuting}
               vaultInfo={vaultInfo}

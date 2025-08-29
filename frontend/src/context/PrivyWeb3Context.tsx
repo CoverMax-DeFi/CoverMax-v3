@@ -1171,17 +1171,16 @@ const InnerWeb3Provider: React.FC<{ children: ReactNode }> = ({ children }) => {
     }
   };
 
-  const unstakeRiskTokens = async (stakedTokenAmount: string, tokenA: string, tokenB: string) => {
+  const unstakeRiskTokens = async (desiredTotalLiquidity: string, tokenA: string, tokenB: string) => {
     if (!signer || !address) {
       toast.error('Please connect your wallet');
       return;
     }
 
     try {
-      const stakedAmountWei = ethers.parseEther(stakedTokenAmount);
       const deadline = Math.floor(Date.now() / 1000) + 60 * 20; // 20 minutes
 
-      // Approve staked tokens
+      // Get contract addresses
       const pairAddress = getCurrentChainAddress(ContractName.SENIOR_JUNIOR_PAIR);
       const routerAddress = getCurrentChainAddress(ContractName.UNISWAP_V2_ROUTER);
 
@@ -1190,21 +1189,41 @@ const InnerWeb3Provider: React.FC<{ children: ReactNode }> = ({ children }) => {
         return;
       }
 
-      const pairContract = new Contract(pairAddress, ERC20_ABI, signer);
-      const allowance = await pairContract.allowance(address, routerAddress);
+      const pairContract = new Contract(pairAddress, UNISWAP_V2_PAIR_ABI, signer);
+      
+      // Get current reserves and total supply to calculate LP token amount needed
+      const [reserve0, reserve1] = await pairContract.getReserves();
+      const totalSupply = await pairContract.totalSupply();
+      const userLPBalance = await pairContract.balanceOf(address);
 
-      if (allowance < stakedAmountWei) {
-        const approveTx = await pairContract.approve(routerAddress, stakedAmountWei);
+      // Calculate total liquidity in the pool (reserve0 + reserve1)
+      const totalPoolLiquidity = reserve0 + reserve1;
+      
+      // Calculate how much LP tokens to burn to get the desired total liquidity
+      // LP tokens to burn = (desired liquidity / total pool liquidity) * total LP supply
+      const desiredLiquidityWei = ethers.parseEther(desiredTotalLiquidity);
+      const lpTokensToBurn = (desiredLiquidityWei * totalSupply) / totalPoolLiquidity;
+
+      // Make sure user has enough LP tokens
+      if (lpTokensToBurn > userLPBalance) {
+        toast.error('Insufficient staked tokens');
+        return;
+      }
+
+      // Approve LP tokens
+      const allowance = await pairContract.allowance(address, routerAddress);
+      if (allowance < lpTokensToBurn) {
+        const approveTx = await pairContract.approve(routerAddress, lpTokensToBurn);
         toast.info('Approving Staked tokens...');
         await approveTx.wait();
       }
 
-      // Unstake risk tokens
+      // Unstake risk tokens - burn calculated LP tokens
       const router = new Contract(routerAddress, UNISWAP_V2_ROUTER_ABI, signer);
       const tx = await router.removeLiquidity(
         tokenA,
         tokenB,
-        stakedAmountWei,
+        lpTokensToBurn,
         0, // amountAMin (accept any amount)
         0, // amountBMin (accept any amount)
         address,

@@ -15,6 +15,9 @@ interface AdvancedFeaturesProps {
   seniorBalance: number;
   juniorBalance: number;
   lpBalance: number;
+  seniorPrice: string;
+  juniorPrice: string;
+  poolReserves: { senior: string; junior: string };
   formatNumber: (num: number, decimals?: number) => string;
   isExecuting: boolean;
   vaultInfo: { emergencyMode: boolean };
@@ -27,6 +30,9 @@ const AdvancedFeatures: React.FC<AdvancedFeaturesProps> = ({
   seniorBalance,
   juniorBalance,
   lpBalance,
+  seniorPrice,
+  juniorPrice,
+  poolReserves,
   formatNumber,
   isExecuting,
   vaultInfo,
@@ -36,6 +42,7 @@ const AdvancedFeatures: React.FC<AdvancedFeaturesProps> = ({
 }) => {
   const [stakingSeniorAmount, setStakingSeniorAmount] = useState('');
   const [stakingJuniorAmount, setStakingJuniorAmount] = useState('');
+  const [isAutoBalancing, setIsAutoBalancing] = useState(true);
   const [unstakeAmount, setUnstakeAmount] = useState('');
   const [emergencyAmount, setEmergencyAmount] = useState('');
   const [preferredAsset, setPreferredAsset] = useState<'aUSDC' | 'cUSDT'>('aUSDC');
@@ -59,11 +66,106 @@ const AdvancedFeatures: React.FC<AdvancedFeaturesProps> = ({
     setEmergencyAmount('');
   };
 
+  // Helper function to calculate pool ratio
+  const getPoolRatio = () => {
+    const seniorReserves = parseFloat(poolReserves.senior);
+    const juniorReserves = parseFloat(poolReserves.junior);
+
+    if (seniorReserves <= 0 || juniorReserves <= 0) {
+      return null; // No valid ratio available
+    }
+
+    return juniorReserves / seniorReserves; // junior per senior token
+  };
+
+  // Auto-balance senior amount based on junior input
+  const handleSeniorAmountChange = (value: string) => {
+    setStakingSeniorAmount(value);
+
+    if (isAutoBalancing && value && !isNaN(parseFloat(value))) {
+      const poolRatio = getPoolRatio();
+      if (poolRatio) {
+        const seniorAmount = parseFloat(value);
+        const calculatedJuniorAmount = seniorAmount * poolRatio;
+
+        // Ensure we don't exceed balance limits
+        const maxJuniorAmount = Math.min(calculatedJuniorAmount, juniorBalance);
+        setStakingJuniorAmount(maxJuniorAmount.toFixed(6));
+
+        // If junior amount was capped, adjust senior amount accordingly
+        if (calculatedJuniorAmount > juniorBalance) {
+          const adjustedSeniorAmount = juniorBalance / poolRatio;
+          setStakingSeniorAmount(Math.min(adjustedSeniorAmount, seniorBalance).toFixed(6));
+        }
+      }
+    } else if (!value) {
+      setStakingJuniorAmount('');
+    }
+  };
+
+  // Auto-balance junior amount based on senior input
+  const handleJuniorAmountChange = (value: string) => {
+    setStakingJuniorAmount(value);
+
+    if (isAutoBalancing && value && !isNaN(parseFloat(value))) {
+      const poolRatio = getPoolRatio();
+      if (poolRatio) {
+        const juniorAmount = parseFloat(value);
+        const calculatedSeniorAmount = juniorAmount / poolRatio;
+
+        // Ensure we don't exceed balance limits
+        const maxSeniorAmount = Math.min(calculatedSeniorAmount, seniorBalance);
+        setStakingSeniorAmount(maxSeniorAmount.toFixed(6));
+
+        // If senior amount was capped, adjust junior amount accordingly
+        if (calculatedSeniorAmount > seniorBalance) {
+          const adjustedJuniorAmount = seniorBalance * poolRatio;
+          setStakingJuniorAmount(Math.min(adjustedJuniorAmount, juniorBalance).toFixed(6));
+        }
+      }
+    } else if (!value) {
+      setStakingSeniorAmount('');
+    }
+  };
+
   const handleOptimalStaking = () => {
-    // Use equal amounts for simplicity - could be enhanced with pool ratio logic
-    const maxAmount = Math.min(seniorBalance, juniorBalance);
-    setStakingSeniorAmount(maxAmount.toFixed(6));
-    setStakingJuniorAmount(maxAmount.toFixed(6));
+    // Calculate optimal amounts based on pool reserves ratio (required for addLiquidity)
+    const seniorReserves = parseFloat(poolReserves.senior);
+    const juniorReserves = parseFloat(poolReserves.junior);
+
+    if (seniorReserves <= 0 || juniorReserves <= 0) {
+      // Fallback to equal amounts if pool reserves are unavailable
+      const maxAmount = Math.min(seniorBalance, juniorBalance);
+      setStakingSeniorAmount(maxAmount.toFixed(6));
+      setStakingJuniorAmount(maxAmount.toFixed(6));
+      return;
+    }
+
+    // Calculate the pool ratio (how much junior per senior token)
+    const poolRatio = juniorReserves / seniorReserves;
+
+    // Find maximum stake amounts that respect the pool ratio
+    const maxSeniorByBalance = seniorBalance;
+    const maxJuniorForSenior = maxSeniorByBalance * poolRatio;
+
+    const maxJuniorByBalance = juniorBalance;
+    const maxSeniorForJunior = maxJuniorByBalance / poolRatio;
+
+    // Use the limiting constraint
+    let optimalSeniorAmount, optimalJuniorAmount;
+
+    if (maxJuniorForSenior <= juniorBalance) {
+      // Senior balance is the constraint
+      optimalSeniorAmount = maxSeniorByBalance;
+      optimalJuniorAmount = maxJuniorForSenior;
+    } else {
+      // Junior balance is the constraint
+      optimalSeniorAmount = maxSeniorForJunior;
+      optimalJuniorAmount = maxJuniorByBalance;
+    }
+
+    setStakingSeniorAmount(optimalSeniorAmount.toFixed(6));
+    setStakingJuniorAmount(optimalJuniorAmount.toFixed(6));
   };
 
   return (
@@ -80,14 +182,31 @@ const AdvancedFeatures: React.FC<AdvancedFeaturesProps> = ({
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <Button
+              onClick={handleOptimalStaking}
+              disabled={seniorBalance <= 0 && juniorBalance <= 0}
+              className="bg-blue-600/20 border border-blue-500 text-blue-300 hover:bg-blue-600/30"
+            >
+              Preview Optimal Amounts
+            </Button>
 
-          <Button
-            onClick={handleOptimalStaking}
-            disabled={seniorBalance <= 0 && juniorBalance <= 0}
-            className="w-full bg-blue-600/20 border border-blue-500 text-blue-300 hover:bg-blue-600/30"
-          >
-            Preview Optimal Staking Amounts
-          </Button>
+            <div className="flex items-center space-x-2">
+              <label className="text-sm text-slate-300">Auto-balance</label>
+              <button
+                onClick={() => setIsAutoBalancing(!isAutoBalancing)}
+                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                  isAutoBalancing ? 'bg-blue-600' : 'bg-slate-600'
+                }`}
+              >
+                <span
+                  className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
+                    isAutoBalancing ? 'translate-x-5' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
+          </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -97,7 +216,7 @@ const AdvancedFeatures: React.FC<AdvancedFeaturesProps> = ({
                   type="number"
                   placeholder="0.0"
                   value={stakingSeniorAmount}
-                  onChange={(e) => setStakingSeniorAmount(e.target.value)}
+                  onChange={(e) => handleSeniorAmountChange(e.target.value)}
                   className="bg-slate-700/50 border-slate-600 text-white placeholder-slate-400 pr-16 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 />
                 <Button
@@ -105,7 +224,7 @@ const AdvancedFeatures: React.FC<AdvancedFeaturesProps> = ({
                   variant="ghost"
                   size="sm"
                   className="absolute right-2 top-1/2 -translate-y-1/2 h-6 px-2 text-xs text-blue-400 hover:text-blue-300 hover:bg-blue-500/20"
-                  onClick={() => setStakingSeniorAmount(seniorBalance.toString())}
+                  onClick={() => handleSeniorAmountChange(seniorBalance.toString())}
                 >
                   Max
                 </Button>
@@ -122,7 +241,7 @@ const AdvancedFeatures: React.FC<AdvancedFeaturesProps> = ({
                   type="number"
                   placeholder="0.0"
                   value={stakingJuniorAmount}
-                  onChange={(e) => setStakingJuniorAmount(e.target.value)}
+                  onChange={(e) => handleJuniorAmountChange(e.target.value)}
                   className="bg-slate-700/50 border-slate-600 text-white placeholder-slate-400 pr-16 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 />
                 <Button
@@ -130,7 +249,7 @@ const AdvancedFeatures: React.FC<AdvancedFeaturesProps> = ({
                   variant="ghost"
                   size="sm"
                   className="absolute right-2 top-1/2 -translate-y-1/2 h-6 px-2 text-xs text-blue-400 hover:text-blue-300 hover:bg-blue-500/20"
-                  onClick={() => setStakingJuniorAmount(juniorBalance.toString())}
+                  onClick={() => handleJuniorAmountChange(juniorBalance.toString())}
                 >
                   Max
                 </Button>
