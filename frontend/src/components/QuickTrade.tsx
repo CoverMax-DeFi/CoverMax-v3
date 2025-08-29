@@ -6,11 +6,11 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useWeb3 } from '@/context/PrivyWeb3Context';
 import { Shield, TrendingUp, Scale, Zap, DollarSign, AlertCircle } from 'lucide-react';
-import { Phase, ContractName, getContractAddress, SupportedChainId } from '@/config/contracts';
+import { Phase, ContractName, getContractAddress, SupportedChainId, getPhaseNameFromBigInt } from '@/config/contracts';
 import SmartLiquiditySuggestion from './SmartLiquiditySuggestion';
 import { ethers } from 'ethers';
 
-type TradeIntent = 'safety' | 'upside' | 'equalize' | 'fullCoverage' | 'fullRisk' | 'balanced' | 'maxSafety' | 'maxUpside' | 'addLiquidity';
+type TradeIntent = 'safety' | 'upside' | 'equalize' | 'fullCoverage' | 'fullRisk' | 'balanced' | 'maxSafety' | 'maxUpside' | 'stakeRiskTokens';
 
 const QuickTrade: React.FC = () => {
   const { 
@@ -22,7 +22,7 @@ const QuickTrade: React.FC = () => {
     swapExactTokensForTokens,
     getAmountsOut,
     depositAsset,
-    addLiquidity,
+    stakeRiskTokens,
     refreshData,
     getPairReserves,
     getTokenBalance,
@@ -197,7 +197,7 @@ const QuickTrade: React.FC = () => {
           console.log(`Adding liquidity: ${seniorAmountString} SENIOR + ${juniorAmountString} JUNIOR`);
           console.log(`Pool ratio: ${poolRatio.toFixed(6)} (${juniorReserve}/${seniorReserve})`);
           
-          await addLiquidity(seniorAmountString, juniorAmountString, seniorTokenAddress!, juniorTokenAddress!);
+          await stakeRiskTokens(seniorAmountString, juniorAmountString, seniorTokenAddress!, juniorTokenAddress!);
           setShowLiquiditySuggestion(false);
         } else {
           alert('Insufficient tokens to add meaningful liquidity while maintaining pool ratio.');
@@ -206,7 +206,7 @@ const QuickTrade: React.FC = () => {
         alert('Cannot determine pool ratio. Pool may be empty.');
       }
     } catch (error) {
-      console.error('Add liquidity failed:', error);
+      console.error('Stake risk tokens failed:', error);
       alert('Adding liquidity failed. Please try again.');
     } finally {
       setIsExecuting(false);
@@ -294,15 +294,13 @@ const QuickTrade: React.FC = () => {
             </div>
           </div>
 
-          {/* Deposit Phase Check */}
-          {Number(vaultInfo.currentPhase) !== Phase.DEPOSIT && (
-            <Alert className="bg-slate-700/50 border-slate-600 text-slate-300">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                Deposits are only allowed during the Deposit phase. Current phase: {vaultInfo.currentPhase !== undefined ? Phase[vaultInfo.currentPhase] : 'Loading...'}
-              </AlertDescription>
-            </Alert>
-          )}
+          {/* Phase Info */}
+          <Alert className="bg-slate-700/50 border-slate-600 text-slate-300">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              Current phase: {getPhaseNameFromBigInt(vaultInfo.currentPhase)}. Deposits and withdrawals allowed at any time.
+            </AlertDescription>
+          </Alert>
 
           {/* Deposit Action Buttons */}
           <div>
@@ -310,7 +308,7 @@ const QuickTrade: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Button 
                 onClick={() => handleDepositAndTrade('fullCoverage')}
-                disabled={!isConnected || !depositAmount || parseFloat(depositAmount) <= 0 || isExecuting || Number(vaultInfo.currentPhase) !== Phase.DEPOSIT}
+                disabled={!isConnected || !depositAmount || parseFloat(depositAmount) <= 0 || isExecuting}
                 className="h-24 text-lg font-medium bg-slate-700 hover:bg-slate-600 transition-all duration-200 border border-slate-600"
               >
                 <div className="flex flex-col items-center space-y-1">
@@ -327,7 +325,7 @@ const QuickTrade: React.FC = () => {
 
               <Button 
                 onClick={() => handleDepositAndTrade('fullRisk')}
-                disabled={!isConnected || !depositAmount || parseFloat(depositAmount) <= 0 || isExecuting || Number(vaultInfo.currentPhase) !== Phase.DEPOSIT}
+                disabled={!isConnected || !depositAmount || parseFloat(depositAmount) <= 0 || isExecuting}
                 className="h-24 text-lg font-medium bg-slate-700 hover:bg-slate-600 transition-all duration-200 border border-slate-600"
               >
                 <div className="flex flex-col items-center space-y-1">
@@ -344,7 +342,7 @@ const QuickTrade: React.FC = () => {
 
               <Button 
                 onClick={() => handleDepositAndTrade('balanced')}
-                disabled={!isConnected || !depositAmount || parseFloat(depositAmount) <= 0 || isExecuting || Number(vaultInfo.currentPhase) !== Phase.DEPOSIT}
+                disabled={!isConnected || !depositAmount || parseFloat(depositAmount) <= 0 || isExecuting}
                 className="h-24 text-lg font-medium bg-slate-700 hover:bg-slate-600 transition-all duration-200 border border-slate-600"
               >
                 <div className="flex flex-col items-center space-y-1">

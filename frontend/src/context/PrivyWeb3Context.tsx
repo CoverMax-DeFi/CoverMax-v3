@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useRef, ReactNode } from 'react';
 import { PrivyProvider, usePrivy, useWallets } from '@privy-io/react-auth';
 import { ethers, BrowserProvider, Contract, Signer } from 'ethers';
 import { toast } from '@/components/ui/sonner';
@@ -38,7 +38,7 @@ interface VaultInfo {
   cUSDTBalance: bigint;
   totalTokensIssued: bigint;
   emergencyMode: boolean;
-  currentPhase: Phase;
+  currentPhase: bigint;
   phaseStartTime: bigint;
   cycleStartTime: bigint;
   timeRemaining: bigint;
@@ -101,15 +101,15 @@ interface Web3ContextType {
     path: string[],
   ) => Promise<string>;
 
-  addLiquidity: (
+  stakeRiskTokens: (
     tokenAAmount: string,
     tokenBAmount: string,
     tokenA: string,
     tokenB: string,
   ) => Promise<void>;
 
-  removeLiquidity: (
-    lpTokenAmount: string,
+  unstakeRiskTokens: (
+    stakedTokenAmount: string,
     tokenA: string,
     tokenB: string,
   ) => Promise<void>;
@@ -143,7 +143,7 @@ const Web3Context = createContext<Web3ContextType>({
     cUSDTBalance: 0n,
     totalTokensIssued: 0n,
     emergencyMode: false,
-    currentPhase: Phase.DEPOSIT,
+    currentPhase: Phase.ACTIVE,
     phaseStartTime: 0n,
     cycleStartTime: 0n,
     timeRemaining: 0n,
@@ -160,14 +160,15 @@ const Web3Context = createContext<Web3ContextType>({
   emergencyWithdraw: async () => {},
   toggleEmergencyMode: async () => {},
   forcePhaseTransition: async () => {},
+  forcePhaseTransitionImmediate: async () => {},
   startNewCycle: async () => {},
   refreshData: async () => {},
   approveToken: async () => {},
   calculateWithdrawalAmounts: async () => ({ aUSDC: 0n, cUSDT: 0n }),
   swapExactTokensForTokens: async () => {},
   getAmountsOut: async () => "0",
-  addLiquidity: async () => {},
-  removeLiquidity: async () => {},
+  stakeRiskTokens: async () => {},
+  unstakeRiskTokens: async () => {},
   getPairReserves: async () => ({ reserve0: 0n, reserve1: 0n }),
   getTokenBalance: async () => 0n,
 });
@@ -197,7 +198,7 @@ const InnerWeb3Provider: React.FC<{ children: ReactNode }> = ({ children }) => {
     cUSDTBalance: 0n,
     totalTokensIssued: 0n,
     emergencyMode: false,
-    currentPhase: Phase.DEPOSIT,
+    currentPhase: 0n,
     phaseStartTime: 0n,
     cycleStartTime: 0n,
     timeRemaining: 0n,
@@ -205,6 +206,10 @@ const InnerWeb3Provider: React.FC<{ children: ReactNode }> = ({ children }) => {
   
   const [seniorTokenAddress, setSeniorTokenAddress] = useState<string | null>(null);
   const [juniorTokenAddress, setJuniorTokenAddress] = useState<string | null>(null);
+  
+  // Add ref to track last refresh time for debouncing
+  const lastRefreshTime = useRef<number>(0);
+  const isRefreshing = useRef<boolean>(false);
 
   // Initial state values for cleanup
   const initialBalances: TokenBalances = {
@@ -220,7 +225,7 @@ const InnerWeb3Provider: React.FC<{ children: ReactNode }> = ({ children }) => {
     cUSDTBalance: 0n,
     totalTokensIssued: 0n,
     emergencyMode: false,
-    currentPhase: Phase.DEPOSIT,
+    currentPhase: 0n,
     phaseStartTime: 0n,
     cycleStartTime: 0n,
     timeRemaining: 0n,
@@ -353,27 +358,77 @@ const InnerWeb3Provider: React.FC<{ children: ReactNode }> = ({ children }) => {
     setupNetworkListener();
   }, [ready, authenticated, wallets, logout]);
 
-  // Load contract data
+  // Load contract data for initial connection
   const loadContractData = async (provider: BrowserProvider, signer: Signer, chainId: SupportedChainId) => {
     try {
+      const userAddress = await signer.getAddress();
+      
+      // Get all contract addresses
       const vaultAddress = getContractAddress(chainId, ContractName.RISK_VAULT);
-      if (!vaultAddress) {
-        console.warn('Risk vault not deployed on this chain');
+      const aUSDCAddress = getContractAddress(chainId, ContractName.MOCK_AUSDC);
+      const cUSDTAddress = getContractAddress(chainId, ContractName.MOCK_CUSDT);
+      const pairAddress = getContractAddress(chainId, ContractName.SENIOR_JUNIOR_PAIR);
+      
+      if (!vaultAddress || !aUSDCAddress || !cUSDTAddress || !pairAddress) {
+        console.warn('Some contracts not available on current chain');
         return;
       }
-
-      const vaultContract = new Contract(vaultAddress, RISK_VAULT_ABI, provider);
       
-      // Get token addresses
-      const [seniorAddr, juniorAddr] = await Promise.all([
+      // Create contract instances
+      const vaultContract = new Contract(vaultAddress, RISK_VAULT_ABI, provider);
+      const aUSDCContract = new Contract(aUSDCAddress, ERC20_ABI, provider);
+      const cUSDTContract = new Contract(cUSDTAddress, ERC20_ABI, provider);
+      const pairContract = new Contract(pairAddress, ERC20_ABI, provider);
+      
+      console.log('🚀 Loading initial data...');
+      
+      // Fetch everything in parallel - simple and fast
+      const [
+        seniorAddr,
+        juniorAddr,
+        protocolStatus,
+        phaseInfo,
+        vaultBalances,
+        userTokenBalances,
+        aUSDCBalance,
+        cUSDTBalance,
+        lpBalance,
+      ] = await Promise.all([
         vaultContract.seniorToken(),
         vaultContract.juniorToken(),
+        vaultContract.getProtocolStatus(),
+        vaultContract.getPhaseInfo(),
+        vaultContract.getVaultBalances(),
+        vaultContract.getUserTokenBalances(userAddress),
+        aUSDCContract.balanceOf(userAddress),
+        cUSDTContract.balanceOf(userAddress),
+        pairContract.balanceOf(userAddress),
       ]);
+      
+      console.log('✅ Initial data loaded');
+      
+      // Set all state at once
       setSeniorTokenAddress(seniorAddr);
       setJuniorTokenAddress(juniorAddr);
       
-      // Load balances and vault info
-      await refreshData();
+      setVaultInfo({
+        aUSDCBalance: vaultBalances.aUSDCVaultBalance,
+        cUSDTBalance: vaultBalances.cUSDTVaultBalance,
+        totalTokensIssued: protocolStatus.totalTokens,
+        emergencyMode: protocolStatus.emergency,
+        currentPhase: protocolStatus.phase,
+        phaseStartTime: phaseInfo.phaseStart,
+        cycleStartTime: phaseInfo.cycleStart,
+        timeRemaining: phaseInfo.timeRemaining,
+      });
+      
+      setBalances({
+        seniorTokens: userTokenBalances.seniorBalance,
+        juniorTokens: userTokenBalances.juniorBalance,
+        aUSDC: aUSDCBalance,
+        cUSDT: cUSDTBalance,
+        lpTokens: lpBalance,
+      });
     } catch (error) {
       console.error('Error loading contract data:', error);
       toast.error('Failed to load contract data for this network');
@@ -424,127 +479,80 @@ const InnerWeb3Provider: React.FC<{ children: ReactNode }> = ({ children }) => {
     }
   };
 
-  // Refresh all data
+  // Refresh data (simpler version)
   const refreshData = useCallback(async () => {
     if (!provider || !signer || !address || !currentChain) {
-      console.log('⏭️ Skipping refresh - missing provider, signer, address, or currentChain');
       return;
     }
     
-    // Check if network is consistent before proceeding
-    const networkChainId = await provider.getNetwork().then(n => Number(n.chainId)).catch(() => null);
-    if (networkChainId && networkChainId !== currentChain) {
-      console.log(`⚠️ Network mismatch detected: provider=${networkChainId}, context=${currentChain}. Skipping refresh.`);
+    // Simple debouncing
+    const now = Date.now();
+    if (now - lastRefreshTime.current < 500 || isRefreshing.current) {
       return;
     }
     
-    console.log(`🔄 Refreshing data for chain ${currentChain} (${getChainConfig(currentChain)?.chainName})`);
+    isRefreshing.current = true;
+    lastRefreshTime.current = now;
     
     try {
+      // Get contract addresses
       const vaultAddress = getCurrentChainAddress(ContractName.RISK_VAULT);
-      if (!vaultAddress) {
-        console.warn('Risk vault not available on current chain');
-        return;
-      }
-
-      console.log(`📄 Using vault contract at: ${vaultAddress}`);
-      const vaultContract = new Contract(vaultAddress, RISK_VAULT_ABI, provider);
-      
-      // Get vault info with detailed logging
-      console.log('📊 Fetching vault contract data...');
-      let userTokenBalances: any;
-      try {
-        const [
-          protocolStatus,
-          phaseInfo,
-          vaultBalances,
-          userTokenBalancesResult,
-        ] = await Promise.all([
-          vaultContract.getProtocolStatus(),
-          vaultContract.getPhaseInfo(),
-          vaultContract.getVaultBalances(),
-          vaultContract.getUserTokenBalances(address),
-        ]);
-        
-        userTokenBalances = userTokenBalancesResult;
-        console.log('✅ Vault contract data fetched successfully');
-        
-        setVaultInfo({
-          aUSDCBalance: vaultBalances.aUSDCVaultBalance,
-          cUSDTBalance: vaultBalances.cUSDTVaultBalance,
-          totalTokensIssued: protocolStatus.totalTokens,
-          emergencyMode: protocolStatus.emergency,
-          currentPhase: protocolStatus.phase,
-          phaseStartTime: phaseInfo.phaseStart,
-          cycleStartTime: phaseInfo.cycleStart,
-          timeRemaining: phaseInfo.timeRemaining,
-        });
-      } catch (vaultError) {
-        if (vaultError.code === 'NETWORK_ERROR') {
-          console.log('🔄 Network change detected in vault calls, skipping...');
-          return;
-        }
-        console.error('❌ Vault contract calls failed:', vaultError);
-        throw vaultError;
-      }
-      
-      // Get user token balances
       const aUSDCAddress = getCurrentChainAddress(ContractName.MOCK_AUSDC);
       const cUSDTAddress = getCurrentChainAddress(ContractName.MOCK_CUSDT);
       const pairAddress = getCurrentChainAddress(ContractName.SENIOR_JUNIOR_PAIR);
-
-      if (!aUSDCAddress || !cUSDTAddress || !pairAddress) {
-        console.warn('Some token contracts not available on current chain');
+      
+      if (!vaultAddress || !aUSDCAddress || !cUSDTAddress || !pairAddress) {
         return;
       }
-
-      console.log(`💰 Fetching token balances...`);
-      console.log(`  aUSDC: ${aUSDCAddress}`);
-      console.log(`  cUSDT: ${cUSDTAddress}`);
-      console.log(`  Pair: ${pairAddress}`);
-
+      
+      // Create contract instances
+      const vaultContract = new Contract(vaultAddress, RISK_VAULT_ABI, provider);
       const aUSDCContract = new Contract(aUSDCAddress, ERC20_ABI, provider);
       const cUSDTContract = new Contract(cUSDTAddress, ERC20_ABI, provider);
       const pairContract = new Contract(pairAddress, ERC20_ABI, provider);
       
-      try {
-        const [aUSDCBalance, cUSDTBalance, lpBalance] = await Promise.all([
-          aUSDCContract.balanceOf(address),
-          cUSDTContract.balanceOf(address),
-          pairContract.balanceOf(address),
-        ]);
-        
-        console.log('✅ Token balances fetched successfully');
-        
-        setBalances({
-          seniorTokens: userTokenBalances.seniorBalance,
-          juniorTokens: userTokenBalances.juniorBalance,
-          aUSDC: aUSDCBalance,
-          cUSDT: cUSDTBalance,
-          lpTokens: lpBalance,
-        });
-      } catch (tokenError) {
-        if (tokenError.code === 'NETWORK_ERROR') {
-          console.log('🔄 Network change detected in token calls, skipping...');
-          return;
-        }
-        console.error('❌ Token balance calls failed:', tokenError);
-        throw tokenError;
-      }
-    } catch (error) {
-      if (error.code === 'NETWORK_ERROR') {
-        console.log('🔄 Network change detected in main refresh, skipping...');
-        return;
-      }
-      if (error.code === 'CALL_EXCEPTION' && currentChain === 296) {
-      }
-      console.error('💥 Error refreshing data on chain', currentChain, ':', error);
-      console.error('Error details:', {
-        message: error.message,
-        code: error.code,
-        reason: error.reason
+      // Fetch all data in parallel (token addresses already loaded, so skip them)
+      const [
+        protocolStatus,
+        phaseInfo,
+        vaultBalances,
+        userTokenBalances,
+        aUSDCBalance,
+        cUSDTBalance,
+        lpBalance,
+      ] = await Promise.all([
+        vaultContract.getProtocolStatus(),
+        vaultContract.getPhaseInfo(),
+        vaultContract.getVaultBalances(),
+        vaultContract.getUserTokenBalances(address),
+        aUSDCContract.balanceOf(address),
+        cUSDTContract.balanceOf(address),
+        pairContract.balanceOf(address),
+      ]);
+      
+      // Update state
+      setVaultInfo({
+        aUSDCBalance: vaultBalances.aUSDCVaultBalance,
+        cUSDTBalance: vaultBalances.cUSDTVaultBalance,
+        totalTokensIssued: protocolStatus.totalTokens,
+        emergencyMode: protocolStatus.emergency,
+        currentPhase: protocolStatus.phase,
+        phaseStartTime: phaseInfo.phaseStart,
+        cycleStartTime: phaseInfo.cycleStart,
+        timeRemaining: phaseInfo.timeRemaining,
       });
-      toast.error(`Failed to refresh data on ${getChainConfig(currentChain)?.chainName || 'unknown network'}`);
+      
+      setBalances({
+        seniorTokens: userTokenBalances.seniorBalance,
+        juniorTokens: userTokenBalances.juniorBalance,
+        aUSDC: aUSDCBalance,
+        cUSDT: cUSDTBalance,
+        lpTokens: lpBalance,
+      });
+    } catch (error) {
+      console.error('Error refreshing data:', error);
+    } finally {
+      isRefreshing.current = false;
     }
   }, [provider, signer, address, currentChain, getCurrentChainAddress]);
 
@@ -903,7 +911,8 @@ const InnerWeb3Provider: React.FC<{ children: ReactNode }> = ({ children }) => {
     
     // Add a delay after chain change before starting auto-refresh
     const timeoutId = setTimeout(() => {
-      const refreshInterval = 4000;
+      // Use longer intervals for Hedera to avoid rate limiting
+      const refreshInterval = currentChain === 296 ? 8000 : 4000; // 8s for Hedera, 4s for others
       
       interval = setInterval(() => {
         refreshData();
@@ -999,6 +1008,10 @@ const InnerWeb3Provider: React.FC<{ children: ReactNode }> = ({ children }) => {
         console.log('🔄 Network change detected in getAmountsOut, skipping...');
         return "0";
       }
+      if (error.code === 'CALL_EXCEPTION' && currentChain === 296) {
+        console.log('⚠️ Hedera RPC issue in getAmountsOut, skipping...');
+        return "0";
+      }
       console.error('Error getting amounts out:', error);
       return "0";
     }
@@ -1017,7 +1030,7 @@ const InnerWeb3Provider: React.FC<{ children: ReactNode }> = ({ children }) => {
     }
   };
 
-  const addLiquidity = async (tokenAAmount: string, tokenBAmount: string, tokenA: string, tokenB: string) => {
+  const stakeRiskTokens = async (tokenAAmount: string, tokenBAmount: string, tokenA: string, tokenB: string) => {
     if (!signer || !address) {
       toast.error('Please connect your wallet');
       return;
@@ -1026,13 +1039,68 @@ const InnerWeb3Provider: React.FC<{ children: ReactNode }> = ({ children }) => {
     try {
       const amountADesired = ethers.parseEther(tokenAAmount);
       const amountBDesired = ethers.parseEther(tokenBAmount);
-      const amountAMin = amountADesired * 95n / 100n; // 5% slippage
-      const amountBMin = amountBDesired * 95n / 100n; // 5% slippage
       const deadline = Math.floor(Date.now() / 1000) + 60 * 20; // 20 minutes
 
-      // Approve both tokens
+      // Check token balances first
       const tokenAContract = new Contract(tokenA, ERC20_ABI, signer);
       const tokenBContract = new Contract(tokenB, ERC20_ABI, signer);
+      
+      const balanceA = await tokenAContract.balanceOf(address);
+      const balanceB = await tokenBContract.balanceOf(address);
+
+      // Use actual balance if requested amount is very close (within 0.01% difference)
+      let finalAmountADesired = amountADesired;
+      let finalAmountBDesired = amountBDesired;
+
+      if (balanceA < amountADesired) {
+        const diff = amountADesired - balanceA;
+        const diffPercentage = (diff * 10000n) / amountADesired; // 0.01% = 1 basis point
+        
+        if (diffPercentage <= 1n) { // If difference is <= 0.01%, use available balance
+          finalAmountADesired = balanceA;
+          console.log(`Adjusting tokenA amount from ${ethers.formatEther(amountADesired)} to ${ethers.formatEther(balanceA)} due to precision`);
+        } else {
+          let symbolA = 'Token A';
+          try {
+            symbolA = await tokenAContract.symbol();
+          } catch (e) {
+            if (tokenA === getCurrentChainAddress(ContractName.SENIOR_TOKEN)) {
+              symbolA = 'SENIOR';
+            } else if (tokenA === getCurrentChainAddress(ContractName.JUNIOR_TOKEN)) {
+              symbolA = 'JUNIOR';
+            }
+          }
+          toast.error(`Insufficient ${symbolA} balance. Required: ${ethers.formatEther(amountADesired)}, Available: ${ethers.formatEther(balanceA)}`);
+          return;
+        }
+      }
+
+      if (balanceB < amountBDesired) {
+        const diff = amountBDesired - balanceB;
+        const diffPercentage = (diff * 10000n) / amountBDesired; // 0.01% = 1 basis point
+        
+        if (diffPercentage <= 1n) { // If difference is <= 0.01%, use available balance
+          finalAmountBDesired = balanceB;
+          console.log(`Adjusting tokenB amount from ${ethers.formatEther(amountBDesired)} to ${ethers.formatEther(balanceB)} due to precision`);
+        } else {
+          let symbolB = 'Token B';
+          try {
+            symbolB = await tokenBContract.symbol();
+          } catch (e) {
+            if (tokenB === getCurrentChainAddress(ContractName.SENIOR_TOKEN)) {
+              symbolB = 'SENIOR';
+            } else if (tokenB === getCurrentChainAddress(ContractName.JUNIOR_TOKEN)) {
+              symbolB = 'JUNIOR';
+            }
+          }
+          toast.error(`Insufficient ${symbolB} balance. Required: ${ethers.formatEther(amountBDesired)}, Available: ${ethers.formatEther(balanceB)}`);
+          return;
+        }
+      }
+
+      // Update amounts and slippage calculations with final amounts
+      const amountAMin = finalAmountADesired * 95n / 100n; // 5% slippage
+      const amountBMin = finalAmountBDesired * 95n / 100n; // 5% slippage
 
       const routerAddress = getCurrentChainAddress(ContractName.UNISWAP_V2_ROUTER);
       if (!routerAddress) {
@@ -1043,8 +1111,9 @@ const InnerWeb3Provider: React.FC<{ children: ReactNode }> = ({ children }) => {
       const allowanceA = await tokenAContract.allowance(address, routerAddress);
       const allowanceB = await tokenBContract.allowance(address, routerAddress);
 
-      if (allowanceA < amountADesired) {
-        const approveTx = await tokenAContract.approve(routerAddress, amountADesired);
+      if (allowanceA < finalAmountADesired) {
+        // Approve max amount to avoid future approval transactions
+        const approveTx = await tokenAContract.approve(routerAddress, ethers.MaxUint256);
         let symbolA = 'Token A';
         try {
           symbolA = await tokenAContract.symbol();
@@ -1060,8 +1129,9 @@ const InnerWeb3Provider: React.FC<{ children: ReactNode }> = ({ children }) => {
         await approveTx.wait();
       }
 
-      if (allowanceB < amountBDesired) {
-        const approveTx = await tokenBContract.approve(routerAddress, amountBDesired);
+      if (allowanceB < finalAmountBDesired) {
+        // Approve max amount to avoid future approval transactions
+        const approveTx = await tokenBContract.approve(routerAddress, ethers.MaxUint256);
         let symbolB = 'Token B';
         try {
           symbolB = await tokenBContract.symbol();
@@ -1077,41 +1147,40 @@ const InnerWeb3Provider: React.FC<{ children: ReactNode }> = ({ children }) => {
         await approveTx.wait();
       }
 
-      // Add liquidity
+      // Stake risk tokens
       const router = new Contract(routerAddress, UNISWAP_V2_ROUTER_ABI, signer);
       const tx = await router.addLiquidity(
         tokenA,
         tokenB,
-        amountADesired,
-        amountBDesired,
+        finalAmountADesired,
+        finalAmountBDesired,
         amountAMin,
         amountBMin,
         address,
         deadline,
       );
 
-      toast.info('Adding liquidity...');
+      toast.info('Staking risk tokens...');
       await tx.wait();
-      toast.success('Liquidity added');
+      toast.success('Risk tokens staked');
       
       await refreshData();
     } catch (error: any) {
-      console.error('Failed to add liquidity:', error);
-      toast.error(error.reason || 'Failed to add liquidity');
+      console.error('Failed to stake risk tokens:', error);
+      toast.error(error.reason || 'Failed to stake risk tokens');
     }
   };
 
-  const removeLiquidity = async (lpTokenAmount: string, tokenA: string, tokenB: string) => {
+  const unstakeRiskTokens = async (lpTokenAmount: string, tokenA: string, tokenB: string) => {
     if (!signer || !address) {
       toast.error('Please connect your wallet');
       return;
     }
 
     try {
-      const lpAmountWei = ethers.parseEther(lpTokenAmount);
       const deadline = Math.floor(Date.now() / 1000) + 60 * 20; // 20 minutes
 
-      // Approve LP tokens
+      // Get contract addresses
       const pairAddress = getCurrentChainAddress(ContractName.SENIOR_JUNIOR_PAIR);
       const routerAddress = getCurrentChainAddress(ContractName.UNISWAP_V2_ROUTER);
 
@@ -1120,35 +1189,50 @@ const InnerWeb3Provider: React.FC<{ children: ReactNode }> = ({ children }) => {
         return;
       }
 
-      const pairContract = new Contract(pairAddress, ERC20_ABI, signer);
-      const allowance = await pairContract.allowance(address, routerAddress);
+      const pairContract = new Contract(pairAddress, UNISWAP_V2_PAIR_ABI, signer);
+      
+      // Get current reserves and total supply to calculate LP token amount needed
+      const [reserve0, reserve1] = await pairContract.getReserves();
+      const totalSupply = await pairContract.totalSupply();
+      const userLPBalance = await pairContract.balanceOf(address);
 
-      if (allowance < lpAmountWei) {
-        const approveTx = await pairContract.approve(routerAddress, lpAmountWei);
-        toast.info('Approving LP tokens...');
+      // Convert LP token amount to wei (user input is in token units, not wei)
+      const lpTokensToBurn = ethers.parseEther(lpTokenAmount);
+
+      // Make sure user has enough LP tokens
+      if (lpTokensToBurn > userLPBalance) {
+        toast.error('Insufficient staked tokens');
+        return;
+      }
+
+      // Approve LP tokens
+      const allowance = await pairContract.allowance(address, routerAddress);
+      if (allowance < lpTokensToBurn) {
+        const approveTx = await pairContract.approve(routerAddress, lpTokensToBurn);
+        toast.info('Approving Staked tokens...');
         await approveTx.wait();
       }
 
-      // Remove liquidity
+      // Unstake risk tokens - burn calculated LP tokens
       const router = new Contract(routerAddress, UNISWAP_V2_ROUTER_ABI, signer);
       const tx = await router.removeLiquidity(
         tokenA,
         tokenB,
-        lpAmountWei,
+        lpTokensToBurn,
         0, // amountAMin (accept any amount)
         0, // amountBMin (accept any amount)
         address,
         deadline,
       );
 
-      toast.info('Removing liquidity...');
+      toast.info('Unstaking risk tokens...');
       await tx.wait();
-      toast.success('Liquidity removed');
+      toast.success('Risk tokens unstaked');
       
       await refreshData();
     } catch (error: any) {
-      console.error('Failed to remove liquidity:', error);
-      toast.error(error.reason || 'Failed to remove liquidity');
+      console.error('Failed to unstake risk tokens:', error);
+      toast.error(error.reason || 'Failed to unstake risk tokens');
     }
   };
 
@@ -1169,6 +1253,10 @@ const InnerWeb3Provider: React.FC<{ children: ReactNode }> = ({ children }) => {
     } catch (error) {
       if (error.code === 'NETWORK_ERROR') {
         console.log('🔄 Network change detected in getPairReserves, skipping...');
+        return { reserve0: 0n, reserve1: 0n };
+      }
+      if (error.code === 'CALL_EXCEPTION' && currentChain === 296) {
+        console.log('⚠️ Hedera RPC issue in getPairReserves, skipping...');
         return { reserve0: 0n, reserve1: 0n };
       }
       console.error('Error getting pair reserves:', error);
@@ -1206,8 +1294,8 @@ const InnerWeb3Provider: React.FC<{ children: ReactNode }> = ({ children }) => {
     swapExactTokensForTokens,
     getAmountsOut,
     getTokenBalance,
-    addLiquidity,
-    removeLiquidity,
+    stakeRiskTokens,
+    unstakeRiskTokens,
     getPairReserves,
   };
 

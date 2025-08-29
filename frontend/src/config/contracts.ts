@@ -21,16 +21,38 @@ export enum ContractName {
 
 // Multi-chain contract addresses
 export const MULTI_CHAIN_ADDRESSES: Record<SupportedChainId, Partial<Record<ContractName, string>>> = {
+  [SupportedChainId.HEDERA_TESTNET]: {
+    [ContractName.MOCK_AUSDC]: "0xc6461cf8E77b40293d90c9670FcC2Da04346Df1A",
+    [ContractName.MOCK_CUSDT]: "0xe786547f22F29E477B51135b24A39E937d291d17",
+    [ContractName.UNISWAP_V2_FACTORY]: "0x3e83552ED9bF1418Bf50fbc7071C87361Ce156b5",
+    [ContractName.WETH]: "0xED6eF615b61D37a5E1cce5D5Aaddc1064Fb9fA07",
+    [ContractName.RISK_VAULT]: "0x86840DBAE8aF63780ffFB2990aADDF5C78aeb184",
+    [ContractName.UNISWAP_V2_ROUTER]: "0xBA659094Ffd44F3CCcFffd7c172cB42f0aD362b0",
+    [ContractName.JUNIOR_TOKEN]: "0x2DDd2DD26A3d90d4a67F02A69728B386B1461710",
+    [ContractName.SENIOR_TOKEN]: "0xC5F805bBD905803e5Ec1280827068B9889978cF3",
+    [ContractName.SENIOR_JUNIOR_PAIR]: "0x40C4F4B6fB472bFE986134A2A99C691E4323b09E",
+  },
+  [SupportedChainId.FLOW_TESTNET]: {
+    [ContractName.MOCK_AUSDC]: "0x27448B112B42c930915bF3953A691c80BdcE7208",
+    [ContractName.MOCK_CUSDT]: "0x39b0982322FfbFd17Bc705ef6E55dc92581337Ef",
+    [ContractName.UNISWAP_V2_FACTORY]: "0x59Bb52f2F93eA480df5d4549C12F5062Adccd087",
+    [ContractName.WETH]: "0xFb01cCbf406E820163911D0A37d89Bab72A85399",
+    [ContractName.RISK_VAULT]: "0x0b6371795b2Ef3149dbd3803eeaf8576282C127A",
+    [ContractName.UNISWAP_V2_ROUTER]: "0x0357D34e591C25b78565611C9d3401553Fff9737",
+    [ContractName.JUNIOR_TOKEN]: "0xA050373612033aA1440a549496400cA48a84Cbdd",
+    [ContractName.SENIOR_TOKEN]: "0xd3ef53FC2874522Aee118640f6e4B632573Ea474",
+    [ContractName.SENIOR_JUNIOR_PAIR]: "0x8609546aE826d023c804a48218FD5EC3037e2059",
+  },
   [SupportedChainId.MOONBEAM_TESTNET]: {
-    [ContractName.MOCK_AUSDC]: "0x7f61393E1E0340ffA9108E1e42004Fe370FFC009",
-    [ContractName.MOCK_CUSDT]: "0xD1778a3Ac473bcd84C18fb872a042E58baD7Ca57",
-    [ContractName.WETH]: "0x079ae146407027a1Bfe5F6957Ed8108bC4dD1F81",
-    [ContractName.UNISWAP_V2_FACTORY]: "0x77b84973c1a3382FEA7768730F467C2325974FEf",
-    [ContractName.UNISWAP_V2_ROUTER]: "0x014DD22Fe0dC9fbD4494eFa09c1889a94A801F62",
-    [ContractName.RISK_VAULT]: "0x0A3084651A5E3D39B237D8C8a6Ea25B019327ab1",
-    [ContractName.JUNIOR_TOKEN]: "0x8b1A793A77B7d09823Fb5ed934E974Ac3E52ca7e",
-    [ContractName.SENIOR_TOKEN]: "0x78d186Ab2fB7aCB5Dd85b3D0Dbec58e9F1a8607E",
-    [ContractName.SENIOR_JUNIOR_PAIR]: "0x6aa77654014443a443A8490366aD6AD2af529750",
+    [ContractName.MOCK_AUSDC]: "0x9f4d4d392123D948DfF5dB77DE41107e8CCc0484",
+    [ContractName.MOCK_CUSDT]: "0x980eD65F0C9E409D9d50f4E2b4E03445b6E88F6D",
+    [ContractName.WETH]: "0x68566FdE9969A27188e70507fa175B8E6f82EdB4",
+    [ContractName.UNISWAP_V2_FACTORY]: "0x6Dfb24eA1FF9E28DDEbD1eAEfF3d019AeB59E064",
+    [ContractName.UNISWAP_V2_ROUTER]: "0x7eE52904D79725d524B949c3F60E20e53077f3fD",
+    [ContractName.RISK_VAULT]: "0xd15870D60d442B4116c85D2d756969f856143EF2",
+    [ContractName.JUNIOR_TOKEN]: "0x4647011eaF6B234662C494c57Df29A83aEEA3dc2",
+    [ContractName.SENIOR_TOKEN]: "0x39241c2eeF295aeD0FD83F3B5E8896ad660e213C",
+    [ContractName.SENIOR_JUNIOR_PAIR]: "0x6cbBdf1473E5Dbe12903787E702Ebc2e64A402fA",
   },
 };
 
@@ -134,23 +156,26 @@ export function getChainDeploymentStatus(chainId: SupportedChainId): Record<Cont
 
 // Phase enum matching the smart contract
 export enum Phase {
-  DEPOSIT = 0,
-  COVERAGE = 1,
-  CLAIMS = 2,
-  FINAL_CLAIMS = 3,
+  ACTIVE = 0,
+  CLAIMS = 1,
+  FINAL_CLAIMS = 2,
 }
 
 export const PHASE_NAMES = {
-  [Phase.DEPOSIT]: "Deposit Period",
-  [Phase.COVERAGE]: "Coverage Period", 
-  [Phase.CLAIMS]: "Claims Period",
+  [Phase.ACTIVE]: "Active Period",
+  [Phase.CLAIMS]: "Claims Period", 
   [Phase.FINAL_CLAIMS]: "Final Claims Period",
 } as const;
 
+// Utility function to get phase name from BigInt
+export function getPhaseNameFromBigInt(phase: bigint | undefined): string {
+  if (phase === undefined) return 'Loading...';
+  return PHASE_NAMES[Number(phase) as Phase] || `Unknown Phase (${phase.toString()})`;
+}
+
 // Phase durations in seconds (matching smart contract)
 export const PHASE_DURATIONS = {
-  [Phase.DEPOSIT]: 2 * 24 * 60 * 60, // 2 days
-  [Phase.COVERAGE]: 3 * 24 * 60 * 60, // 3 days
+  [Phase.ACTIVE]: 5 * 24 * 60 * 60, // 5 days
   [Phase.CLAIMS]: 1 * 24 * 60 * 60, // 1 day
   [Phase.FINAL_CLAIMS]: 1 * 24 * 60 * 60, // 1 day
 } as const;
