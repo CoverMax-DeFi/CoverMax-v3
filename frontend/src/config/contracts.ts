@@ -3,7 +3,7 @@
 
 // Supported chain IDs
 export enum SupportedChainId {
-  MOONBEAM_TESTNET = 1287,
+  XRPL_EVM_TESTNET = 1449000,
 }
 
 // Contract names enum for type safety
@@ -21,38 +21,16 @@ export enum ContractName {
 
 // Multi-chain contract addresses
 export const MULTI_CHAIN_ADDRESSES: Record<SupportedChainId, Partial<Record<ContractName, string>>> = {
-  [SupportedChainId.HEDERA_TESTNET]: {
-    [ContractName.MOCK_AUSDC]: "0xc6461cf8E77b40293d90c9670FcC2Da04346Df1A",
-    [ContractName.MOCK_CUSDT]: "0xe786547f22F29E477B51135b24A39E937d291d17",
-    [ContractName.UNISWAP_V2_FACTORY]: "0x3e83552ED9bF1418Bf50fbc7071C87361Ce156b5",
-    [ContractName.WETH]: "0xED6eF615b61D37a5E1cce5D5Aaddc1064Fb9fA07",
-    [ContractName.RISK_VAULT]: "0x86840DBAE8aF63780ffFB2990aADDF5C78aeb184",
-    [ContractName.UNISWAP_V2_ROUTER]: "0xBA659094Ffd44F3CCcFffd7c172cB42f0aD362b0",
-    [ContractName.JUNIOR_TOKEN]: "0x2DDd2DD26A3d90d4a67F02A69728B386B1461710",
-    [ContractName.SENIOR_TOKEN]: "0xC5F805bBD905803e5Ec1280827068B9889978cF3",
-    [ContractName.SENIOR_JUNIOR_PAIR]: "0x40C4F4B6fB472bFE986134A2A99C691E4323b09E",
-  },
-  [SupportedChainId.FLOW_TESTNET]: {
-    [ContractName.MOCK_AUSDC]: "0x27448B112B42c930915bF3953A691c80BdcE7208",
-    [ContractName.MOCK_CUSDT]: "0x39b0982322FfbFd17Bc705ef6E55dc92581337Ef",
-    [ContractName.UNISWAP_V2_FACTORY]: "0x59Bb52f2F93eA480df5d4549C12F5062Adccd087",
-    [ContractName.WETH]: "0xFb01cCbf406E820163911D0A37d89Bab72A85399",
-    [ContractName.RISK_VAULT]: "0x0b6371795b2Ef3149dbd3803eeaf8576282C127A",
-    [ContractName.UNISWAP_V2_ROUTER]: "0x0357D34e591C25b78565611C9d3401553Fff9737",
-    [ContractName.JUNIOR_TOKEN]: "0xA050373612033aA1440a549496400cA48a84Cbdd",
-    [ContractName.SENIOR_TOKEN]: "0xd3ef53FC2874522Aee118640f6e4B632573Ea474",
-    [ContractName.SENIOR_JUNIOR_PAIR]: "0x8609546aE826d023c804a48218FD5EC3037e2059",
-  },
-  [SupportedChainId.MOONBEAM_TESTNET]: {
-    [ContractName.MOCK_AUSDC]: "0xF40680bD83e166884423861e8EbdEDF8c9A4fc38",
-    [ContractName.MOCK_CUSDT]: "0xff26Ac53F24C283fD70809aA535fFf23B0948AD2",
-    [ContractName.WETH]: "0x1dE6780F59a8c2d16dF76Ba8D2345a35307AD9db",
-    [ContractName.UNISWAP_V2_FACTORY]: "0x3b354F688A86601DD153fB8D6bAC50FdA6B6A5c1",
-    [ContractName.UNISWAP_V2_ROUTER]: "0x323c4DE3B7267fe9A4bEE9C9379d2099170f57cd",
-    [ContractName.RISK_VAULT]: "0x9Db400b48946a4EA1f9FD32515C0dd8F1C08Fc6f",
-    [ContractName.JUNIOR_TOKEN]: "0x428725D392338Db6b0D0bB7A511D42F17111893D",
-    [ContractName.SENIOR_TOKEN]: "0xc015FF3A6EAF86050E7B3693cE1337e99e88D123",
-    [ContractName.SENIOR_JUNIOR_PAIR]: "0x0B56dd7f83157e88F39690316b65c37F60FCdDB7",
+  [SupportedChainId.XRPL_EVM_TESTNET]: {
+    [ContractName.MOCK_AUSDC]: "0x88b33Eb7E03Ce244616BbFa31288dDB879E6fb19",
+    [ContractName.MOCK_CUSDT]: "0xFa1642Fa8b97aa5dAE03ec1BF618BdF4Be8904EC",
+    [ContractName.UNISWAP_V2_FACTORY]: "0xC1C6B80ca7bB2D190cA66189eAB5D91aDe907f6A",
+    [ContractName.WETH]: "0x0AEf62AA753C4a989702Dd4c59e5d3D0d100629e",
+    [ContractName.RISK_VAULT]: "0x2a67De142a342162Ae6F5C0FFC5a74a58CF90C72",
+    [ContractName.UNISWAP_V2_ROUTER]: "0x84Cb1F42C6651f9493a8E76348D2049238870596",
+    [ContractName.JUNIOR_TOKEN]: "0x15ADcB8b35e7faAa7cE734a8B8cd4668AAb1f292",
+    [ContractName.SENIOR_TOKEN]: "0x0788e4fC67A089ce8c753f4Cf593905063bA744C",
+    [ContractName.SENIOR_JUNIOR_PAIR]: "0x0f3f929C7260bfC360B251359Bb2BD64987419F7",
   },
 };
 
@@ -76,7 +54,7 @@ export function getChainContracts(chainId: SupportedChainId): Record<string, str
 
 // Legacy export for backward compatibility (deprecated - use getContractAddress instead)
 // @deprecated Use getContractAddress(chainId, contractName) instead
-export const CONTRACT_ADDRESSES = MULTI_CHAIN_ADDRESSES[SupportedChainId.MOONBEAM_TESTNET] as Record<string, string>;
+export const CONTRACT_ADDRESSES = MULTI_CHAIN_ADDRESSES[SupportedChainId.XRPL_EVM_TESTNET] as Record<string, string>;
 
 // Chain configurations
 export const CHAIN_CONFIGS: Record<SupportedChainId, {
@@ -93,24 +71,24 @@ export const CHAIN_CONFIGS: Record<SupportedChainId, {
   icon: string;
   isTestnet: boolean;
 }> = {
-  [SupportedChainId.MOONBEAM_TESTNET]: {
-    chainId: 1287,
-    chainName: "Moonbase Alpha",
-    networkName: "moonbeam-testnet",
+  [SupportedChainId.XRPL_EVM_TESTNET]: {
+    chainId: 1449000,
+    chainName: "XRPL EVM",
+    networkName: "xrpl-evm-testnet",
     nativeCurrency: {
-      name: "DEV",
-      symbol: "DEV",
+      name: "XRP",
+      symbol: "XRP",
       decimals: 18,
     },
-    rpcUrls: ["https://rpc.api.moonbase.moonbeam.network"],
-    blockExplorerUrls: ["https://moonbase.moonscan.io"],
-    icon: "🌙",
+    rpcUrls: ["https://rpc.testnet.xrplevm.org"],
+    blockExplorerUrls: ["https://explorer.testnet.xrplevm.org"],
+    icon: "🔗",
     isTestnet: true,
   },
 };
 
-// Default chain configuration (Moonbeam Testnet)
-export const DEFAULT_CHAIN_ID = SupportedChainId.MOONBEAM_TESTNET;
+// Default chain configuration (XRPL EVM Testnet)
+export const DEFAULT_CHAIN_ID = SupportedChainId.XRPL_EVM_TESTNET;
 export const CHAIN_CONFIG = CHAIN_CONFIGS[DEFAULT_CHAIN_ID];
 
 // Helper function to get chain config by ID
@@ -182,8 +160,8 @@ export const PHASE_DURATIONS = {
 
 // Deployment info
 export const DEPLOYMENT_INFO = {
-  network: "Moonbase Alpha",
-  chainId: 1287,
-  deployedAt: 1751731602070,
+  network: "XRPL EVM",
+  chainId: 1449000,
+  deployedAt: Date.now(),
   deploymentBlock: "Latest", // Could be extracted from deployment artifacts
 } as const;

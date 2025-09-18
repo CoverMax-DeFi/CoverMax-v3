@@ -1,0 +1,11 @@
+{
+  "RiskTokenModule#MockAUSDC": "0x88b33Eb7E03Ce244616BbFa31288dDB879E6fb19",
+  "RiskTokenModule#MockCUSDT": "0xFa1642Fa8b97aa5dAE03ec1BF618BdF4Be8904EC",
+  "RiskTokenModule#UniswapV2Factory": "0xC1C6B80ca7bB2D190cA66189eAB5D91aDe907f6A",
+  "RiskTokenModule#WETH": "0x0AEf62AA753C4a989702Dd4c59e5d3D0d100629e",
+  "RiskTokenModule#RiskVault": "0x2a67De142a342162Ae6F5C0FFC5a74a58CF90C72",
+  "RiskTokenModule#UniswapV2Router02": "0x84Cb1F42C6651f9493a8E76348D2049238870596",
+  "RiskTokenModule#juniorTokenContract": "0x15ADcB8b35e7faAa7cE734a8B8cd4668AAb1f292",
+  "RiskTokenModule#seniorTokenContract": "0x0788e4fC67A089ce8c753f4Cf593905063bA744C",
+  "RiskTokenModule#UniswapV2Pair": "0x0f3f929C7260bfC360B251359Bb2BD64987419F7"
+}
