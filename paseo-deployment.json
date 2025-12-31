@@ -1,0 +1,17 @@
+{
+  "network": "Paseo Asset Hub Testnet",
+  "chainId": "420420422",
+  "deployer": "0xF7796E6bF14BB2716f47c5D0C889A51a9052CCc3",
+  "deployedAt": "2025-12-31T06:39:24.560Z",
+  "contracts": {
+    "mockAUSDC": "0xE9b26725132483688c723d373aFBF1a237267Ac9",
+    "mockCUSDT": "0xDb62F29863EB187225ee575B536d885E40277598",
+    "weth": "0x26C53F5f9B0560ae4DD3b3b8C7A766f884127f1e",
+    "uniswapFactory": "0x5808aFf8D40A0440F2493dA2286DF0E4403a10cc",
+    "uniswapRouter": "0xdf49eF5F6A6886aC0bc296890b43a3ff20A4bd23",
+    "riskVault": "0x807Cc2385d9fe3cb093bdD06Ed1d8D7afD500DD6",
+    "seniorToken": "0x90Fa65Faa1242FC899d303D7e659114DC74E1050",
+    "juniorToken": "0x2e6DCCc425aBc06Bf0Fc4eDd294c81B9a1A5574d",
+    "seniorJuniorPair": "0xc842Ba50303A4651367d63E89a92C65de1d0230A"
+  }
+}

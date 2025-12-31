@@ -2,6 +2,7 @@ import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
 import "@nomicfoundation/hardhat-verify";
 import "@nomicfoundation/hardhat-ignition-ethers";
+import "@parity/hardhat-polkadot";
 import * as dotenv from "dotenv";
 
 dotenv.config();
@@ -28,6 +29,10 @@ const config: HardhatUserConfig = {
         },
       }
     ]
+  },
+  // @ts-ignore - resolc is from hardhat-polkadot plugin
+  resolc: {
+    compilerSource: "npm"
   },
   networks: {
     hardhat: {
@@ -72,6 +77,15 @@ const config: HardhatUserConfig = {
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
       gas: 5000000,
       gasPrice: 31250000000, // 31.25 Gwei (new minimum after Runtime 3400)
+    },
+    // Polkadot Hub TestNet (Paseo Asset Hub)
+    passetHub: {
+      url: "https://testnet-passet-hub-eth-rpc.polkadot.io",
+      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+      gasPrice: 1000000000000, // 1000 gwei - Paseo network requirement
+      timeout: 60000, // 60 seconds timeout
+      // @ts-ignore - polkavm is required for Polkadot PolkaVM compatibility but not in Hardhat types
+      polkavm: true,
     },
   },
   gasReporter: {

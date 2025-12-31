@@ -4,6 +4,7 @@
 // Supported chain IDs
 export enum SupportedChainId {
   MOONBEAM_TESTNET = 1287,
+  PASEO_TESTNET = 420420422,
 }
 
 // Contract names enum for type safety
@@ -21,28 +22,6 @@ export enum ContractName {
 
 // Multi-chain contract addresses
 export const MULTI_CHAIN_ADDRESSES: Record<SupportedChainId, Partial<Record<ContractName, string>>> = {
-  [SupportedChainId.HEDERA_TESTNET]: {
-    [ContractName.MOCK_AUSDC]: "0xc6461cf8E77b40293d90c9670FcC2Da04346Df1A",
-    [ContractName.MOCK_CUSDT]: "0xe786547f22F29E477B51135b24A39E937d291d17",
-    [ContractName.UNISWAP_V2_FACTORY]: "0x3e83552ED9bF1418Bf50fbc7071C87361Ce156b5",
-    [ContractName.WETH]: "0xED6eF615b61D37a5E1cce5D5Aaddc1064Fb9fA07",
-    [ContractName.RISK_VAULT]: "0x86840DBAE8aF63780ffFB2990aADDF5C78aeb184",
-    [ContractName.UNISWAP_V2_ROUTER]: "0xBA659094Ffd44F3CCcFffd7c172cB42f0aD362b0",
-    [ContractName.JUNIOR_TOKEN]: "0x2DDd2DD26A3d90d4a67F02A69728B386B1461710",
-    [ContractName.SENIOR_TOKEN]: "0xC5F805bBD905803e5Ec1280827068B9889978cF3",
-    [ContractName.SENIOR_JUNIOR_PAIR]: "0x40C4F4B6fB472bFE986134A2A99C691E4323b09E",
-  },
-  [SupportedChainId.FLOW_TESTNET]: {
-    [ContractName.MOCK_AUSDC]: "0x27448B112B42c930915bF3953A691c80BdcE7208",
-    [ContractName.MOCK_CUSDT]: "0x39b0982322FfbFd17Bc705ef6E55dc92581337Ef",
-    [ContractName.UNISWAP_V2_FACTORY]: "0x59Bb52f2F93eA480df5d4549C12F5062Adccd087",
-    [ContractName.WETH]: "0xFb01cCbf406E820163911D0A37d89Bab72A85399",
-    [ContractName.RISK_VAULT]: "0x0b6371795b2Ef3149dbd3803eeaf8576282C127A",
-    [ContractName.UNISWAP_V2_ROUTER]: "0x0357D34e591C25b78565611C9d3401553Fff9737",
-    [ContractName.JUNIOR_TOKEN]: "0xA050373612033aA1440a549496400cA48a84Cbdd",
-    [ContractName.SENIOR_TOKEN]: "0xd3ef53FC2874522Aee118640f6e4B632573Ea474",
-    [ContractName.SENIOR_JUNIOR_PAIR]: "0x8609546aE826d023c804a48218FD5EC3037e2059",
-  },
   [SupportedChainId.MOONBEAM_TESTNET]: {
     [ContractName.MOCK_AUSDC]: "0xF40680bD83e166884423861e8EbdEDF8c9A4fc38",
     [ContractName.MOCK_CUSDT]: "0xff26Ac53F24C283fD70809aA535fFf23B0948AD2",
@@ -53,6 +32,17 @@ export const MULTI_CHAIN_ADDRESSES: Record<SupportedChainId, Partial<Record<Cont
     [ContractName.JUNIOR_TOKEN]: "0x428725D392338Db6b0D0bB7A511D42F17111893D",
     [ContractName.SENIOR_TOKEN]: "0xc015FF3A6EAF86050E7B3693cE1337e99e88D123",
     [ContractName.SENIOR_JUNIOR_PAIR]: "0x0B56dd7f83157e88F39690316b65c37F60FCdDB7",
+  },
+  [SupportedChainId.PASEO_TESTNET]: {
+    [ContractName.MOCK_AUSDC]: "0xE9b26725132483688c723d373aFBF1a237267Ac9",
+    [ContractName.MOCK_CUSDT]: "0xDb62F29863EB187225ee575B536d885E40277598",
+    [ContractName.WETH]: "0x26C53F5f9B0560ae4DD3b3b8C7A766f884127f1e",
+    [ContractName.UNISWAP_V2_FACTORY]: "0x5808aFf8D40A0440F2493dA2286DF0E4403a10cc",
+    [ContractName.UNISWAP_V2_ROUTER]: "0xdf49eF5F6A6886aC0bc296890b43a3ff20A4bd23",
+    [ContractName.RISK_VAULT]: "0x807Cc2385d9fe3cb093bdD06Ed1d8D7afD500DD6",
+    [ContractName.JUNIOR_TOKEN]: "0x2e6DCCc425aBc06Bf0Fc4eDd294c81B9a1A5574d",
+    [ContractName.SENIOR_TOKEN]: "0x90Fa65Faa1242FC899d303D7e659114DC74E1050",
+    [ContractName.SENIOR_JUNIOR_PAIR]: "0xc842Ba50303A4651367d63E89a92C65de1d0230A",
   },
 };
 
@@ -107,10 +97,24 @@ export const CHAIN_CONFIGS: Record<SupportedChainId, {
     icon: "🌙",
     isTestnet: true,
   },
+  [SupportedChainId.PASEO_TESTNET]: {
+    chainId: 420420422,
+    chainName: "Paseo Asset Hub",
+    networkName: "paseo-testnet",
+    nativeCurrency: {
+      name: "PAS",
+      symbol: "PAS",
+      decimals: 18,
+    },
+    rpcUrls: ["https://testnet-passet-hub-eth-rpc.polkadot.io"],
+    blockExplorerUrls: ["https://polkadot.js.org/apps/?rpc=wss://paseo.rpc.amforc.com"],
+    icon: "🔵",
+    isTestnet: true,
+  },
 };
 
-// Default chain configuration (Moonbeam Testnet)
-export const DEFAULT_CHAIN_ID = SupportedChainId.MOONBEAM_TESTNET;
+// Default chain configuration (Paseo Testnet for Milestone 3)
+export const DEFAULT_CHAIN_ID = SupportedChainId.PASEO_TESTNET;
 export const CHAIN_CONFIG = CHAIN_CONFIGS[DEFAULT_CHAIN_ID];
 
 // Helper function to get chain config by ID
@@ -125,7 +129,7 @@ export function isSupportedChain(chainId: number): chainId is SupportedChainId {
 
 // Helper function to get contract address safely without throwing
 export function getContractAddressSafe(
-  chainId: SupportedChainId, 
+  chainId: SupportedChainId,
   contractName: ContractName
 ): string | null {
   try {
@@ -137,7 +141,7 @@ export function getContractAddressSafe(
 
 // Helper function to check if a contract is deployed on a chain
 export function isContractDeployed(
-  chainId: SupportedChainId, 
+  chainId: SupportedChainId,
   contractName: ContractName
 ): boolean {
   return getContractAddressSafe(chainId, contractName) !== null;
@@ -146,11 +150,11 @@ export function isContractDeployed(
 // Helper function to get deployment status for all contracts on a chain
 export function getChainDeploymentStatus(chainId: SupportedChainId): Record<ContractName, boolean> {
   const status = {} as Record<ContractName, boolean>;
-  
+
   Object.values(ContractName).forEach(contractName => {
     status[contractName] = isContractDeployed(chainId, contractName);
   });
-  
+
   return status;
 }
 
@@ -163,7 +167,7 @@ export enum Phase {
 
 export const PHASE_NAMES = {
   [Phase.ACTIVE]: "Active Period",
-  [Phase.CLAIMS]: "Claims Period", 
+  [Phase.CLAIMS]: "Claims Period",
   [Phase.FINAL_CLAIMS]: "Final Claims Period",
 } as const;
 
@@ -182,8 +186,8 @@ export const PHASE_DURATIONS = {
 
 // Deployment info
 export const DEPLOYMENT_INFO = {
-  network: "Moonbase Alpha",
-  chainId: 1287,
-  deployedAt: 1751731602070,
+  network: "Paseo Asset Hub",
+  chainId: 420420422,
+  deployedAt: 1735624764560, // December 31, 2025
   deploymentBlock: "Latest", // Could be extracted from deployment artifacts
 } as const;
