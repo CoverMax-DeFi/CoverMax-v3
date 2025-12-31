@@ -27,7 +27,8 @@
     "verify:moonbeam-all": "node scripts/verify-moonbeam-contracts.js",
     "verify:paseo": "npx hardhat run scripts/verify-paseo-complete.js --network passetHub",
     "mint-tokens:paseo": "npx hardhat run scripts/mint-tokens-to-user.js --network passetHub",
-    "update-frontend-config": "ts-node scripts/update-frontend-config.ts"
+    "update-frontend-config": "ts-node scripts/update-frontend-config.ts",
+    "update-frontend:paseo": "node scripts/update-frontend-paseo.js"
   },
   "repository": {
     "type": "git",

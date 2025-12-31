@@ -68,8 +68,7 @@ async function main() {
   // Deploy RiskVault (this also deploys SeniorToken and JuniorToken)
   const riskVault = await deployContract("RiskVault", [
     await mockAUSDC.getAddress(),
-    await mockCUSDT.getAddress(),
-    await router.getAddress()
+    await mockCUSDT.getAddress()
   ]);
   await sleep(3000);
 

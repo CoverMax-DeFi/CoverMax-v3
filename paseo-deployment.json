@@ -2,16 +2,22 @@
   "network": "Paseo Asset Hub Testnet",
   "chainId": "420420422",
   "deployer": "0xF7796E6bF14BB2716f47c5D0C889A51a9052CCc3",
-  "deployedAt": "2025-12-31T06:39:24.560Z",
+  "deployedAt": "2025-12-31T07:31:40.724Z",
   "contracts": {
-    "mockAUSDC": "0xE9b26725132483688c723d373aFBF1a237267Ac9",
-    "mockCUSDT": "0xDb62F29863EB187225ee575B536d885E40277598",
-    "weth": "0x26C53F5f9B0560ae4DD3b3b8C7A766f884127f1e",
-    "uniswapFactory": "0x5808aFf8D40A0440F2493dA2286DF0E4403a10cc",
-    "uniswapRouter": "0xdf49eF5F6A6886aC0bc296890b43a3ff20A4bd23",
-    "riskVault": "0x807Cc2385d9fe3cb093bdD06Ed1d8D7afD500DD6",
-    "seniorToken": "0x90Fa65Faa1242FC899d303D7e659114DC74E1050",
-    "juniorToken": "0x2e6DCCc425aBc06Bf0Fc4eDd294c81B9a1A5574d",
-    "seniorJuniorPair": "0xc842Ba50303A4651367d63E89a92C65de1d0230A"
+    "mockAUSDC": "0xbc20b977781705589EC578aC7d5680Af821D4c1c",
+    "mockCUSDT": "0x0310c9Cf82c2b0a426F2a5e09d1d670B31442a63",
+    "weth": "0x86840528937f5f1578601d3d31Bc7cFF6A540009",
+    "uniswapFactory": "0x64eB9f6817f43F4a666Ba9981Dce159bf3Fc93cC",
+    "uniswapRouter": "0xd609C157ee45220E929586d8D2bAf27A59D92cB3",
+    "riskVault": "0x78a9bCbA870A367559258AAAC5b7e533cF9C0EB7",
+    "seniorToken": "0x9c6A5C213F5CB326186E876C3e37ec8F73768b2B",
+    "juniorToken": "0xc3e818236440461916BF75C91bd28Bb27bEa746e",
+    "seniorJuniorPair": "0xC703aa238dFCFA7f7076a4033a1046614219B5c2"
+  },
+  "initialLiquidity": {
+    "senior": "25000.0",
+    "junior": "25000.0",
+    "reserve0": "25000.0",
+    "reserve1": "25000.0"
   }
 }
